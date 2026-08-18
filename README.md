@@ -1,6 +1,6 @@
 # cfbstats
 
-The goal of this repository is to centralize code for exploring the relationship between coaching and whether players become drafted into the NFL
+The goal of this repository is to centralize code for exploring the relationship between player development, including coaching, and whether players become drafted into the NFL
 
 ## Data
 
