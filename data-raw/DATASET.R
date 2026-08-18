@@ -49,6 +49,21 @@ purrr::walk(
   }
 )
 
+purrr::map(
+  years,
+  ~ {
+    arrow::read_parquet(
+      paste0("data/player_", .x, "_stats.parquet"),
+      as_data_frame = FALSE
+    ) |>
+      dplyr::collect()
+  }
+) |>
+  purrr::list_rbind() |>
+  arrow::write_parquet(
+    'data/player_stats.parquet'
+  )
+
 # Coaches data
 httr2::request(
   "https://api.collegefootballdata.com/coaches"
@@ -69,23 +84,23 @@ httr2::request(
     "data/coaches.parquet"
   )
 
+arrow::read_parquet(
+  "data/coaches.parquet",
+  col_select = c("id", "firstName", "lastName")
+) |>
+  dplyr::distinct()
+
 players <-
-  purrr::map(
-    years,
-    ~ {
-      arrow::read_parquet(
-        paste0("data/player_", .x, "_stats.parquet"),
-        as_data_frame = FALSE
-      ) |>
-        dplyr::pull(
-          player,
-          as_vector = TRUE
-        ) |>
-        unique()
-    }
+  arrow::read_parquet(
+    'data/player_stats.parquet',
+    as_data_frame = FALSE
   ) |>
-  purrr::flatten_chr() |>
-  unique()
+  dplyr::pull(
+    player,
+    as_vector = TRUE
+  ) |>
+  unique() |>
+  sort()
 
 picked <-
   arrow::read_parquet(
@@ -105,21 +120,14 @@ intersect(
   dplyr::n_distinct()
 
 teams <-
-  purrr::map(
-    years,
-    ~ {
-      arrow::read_parquet(
-        paste0("data/player_", .x, "_stats.parquet"),
-        as_data_frame = FALSE
-      ) |>
-        dplyr::pull(
-          team,
-          as_vector = TRUE
-        ) |>
-        unique()
-    }
+  arrow::read_parquet(
+    'data/player_stats.parquet',
+    as_data_frame = FALSE
   ) |>
-  purrr::flatten_chr() |>
+  dplyr::pull(
+    collegeTeam,
+    as_vector = TRUE
+  ) |>
   unique() |>
   sort()
 
