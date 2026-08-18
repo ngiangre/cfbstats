@@ -18,3 +18,13 @@ The goal of this repository is to centralize code for exploring the relationship
 
    Team -> Year -> Player -> Performance
 
+## Data Model
+
+Team: collegeId, college, year, nflTeamId, nflTeam
+
+Player: playerId, player, position, 
+
+Coach: id, firstName, lastName, collegeId = seasons_teamId, year = seasons_year, seasons_wins, seasons_games
+
+nflPick: year, nflTeamId, nflTeam, playerId = collegeAthleteId, player = name, overall, round, pick
+
