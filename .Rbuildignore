@@ -1,2 +1,7 @@
 ^LICENSE\.md$
 ^data-raw$
+^\.posit$
+^\.Renviron$
+^CLAUDE\.md$
+^air\.toml$
+^\.vscode$
