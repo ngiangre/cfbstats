@@ -125,7 +125,7 @@ teams <-
     as_data_frame = FALSE
   ) |>
   dplyr::pull(
-    collegeTeam,
+    team,
     as_vector = TRUE
   ) |>
   unique() |>
