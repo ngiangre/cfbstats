@@ -1,0 +1,56 @@
+dataset: picks
+source: CFBD /draft/picks
+grain: one drafted player (NFL draft pick)
+key: collegeAthleteId (int) → playerId (string, coerced; decision 0003)
+description: >
+  Historical NFL draft picks. The modeling outcome (drafted). Joins to player
+  stats and roster on the shared athlete-id namespace once coerced to string.
+columns:
+  - name: collegeAthleteId
+    type: int32
+    description: CFBD athlete id; the canonical player key (decision 0003).
+    provenance: raw
+  - name: year
+    type: int32
+    description: Draft year.
+    provenance: raw
+  - name: overall
+    type: int32
+    description: Overall pick number.
+    provenance: raw
+  - name: round
+    type: int32
+    description: Draft round.
+    provenance: raw
+  - name: position
+    type: string
+    description: Player position at draft.
+    provenance: raw
+  - name: collegeTeam
+    type: string
+    description: College team.
+    provenance: raw
+  - name: height
+    type: int32
+    description: Height (inches) at draft.
+    provenance: raw
+  - name: weight
+    type: int32
+    description: Weight (lbs) at draft.
+    provenance: raw
+  - name: preDraftRanking
+    type: int32
+    description: Pre-draft overall ranking.
+    provenance: raw
+  - name: hometownInfo_state
+    type: string
+    description: Hometown state (unnested from hometownInfo).
+    provenance: raw
+  - name: playerId
+    type: string
+    description: collegeAthleteId coerced to string; join key.
+    provenance: derived (clean_picks)
+  - name: drafted
+    type: logical
+    description: Always TRUE in this table; the positive outcome label.
+    provenance: derived (clean_picks)

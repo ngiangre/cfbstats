@@ -1,0 +1,28 @@
+---
+title: "Analysis"
+vignette: >
+  %\VignetteIndexEntry{Analysis}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+Write-ups and notes. We start by **describing** who gets drafted, then explore
+associations, then build and honestly evaluate forecasts.
+
+## Building the foundation first
+
+Before fitting a single model, we built the scaffolding that makes results
+trustworthy: a `targets` pipeline (the Pipeline page), data contracts that run
+inside it, and a per-step audit log (the Data page) so any number we report can
+be traced back to the rows and code that produced it.
+
+The payoff was immediate. The audit log surfaced where the **long** stats
+collapse to a player-season backbone, and where joining head coaches inflates
+rows because some schools had more than one head coach in a season. Ingesting
+`/roster` also taught us two things worth writing down: its `year` field is the
+player's eligibility class, not the season (fixed by stamping the queried year,
+lifting key coverage from ~29% to ~99.5%), and its weight is *static* per player
+— so a between-season weight-change feature isn't derivable from it.
+
+Those are exactly the silent data issues we never want to discover *after*
+modeling. Next up: describe who gets drafted by position, team, and hometown.

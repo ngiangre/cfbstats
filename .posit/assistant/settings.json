@@ -6,14 +6,24 @@
     "edit": {
       "*.md": "allow",
       "*.R": "allow",
-      "*/DESCRIPTION": "allow"
+      "*/DESCRIPTION": "allow",
+      "*/.gitignore": "allow",
+      "*/.Rbuildignore": "allow",
+      "*.yml": "allow",
+      "*.qmd": "allow"
     },
     "executeCode": {
       "*": "allow"
     },
     "bash": {
       "air *": "allow",
-      "echo *": "allow"
+      "echo *": "allow",
+      "git log *": "allow",
+      "git branch *": "allow",
+      "git status *": "allow",
+      "find *": "allow",
+      "sed *": "allow",
+      "ls *": "allow"
     },
     "webfetch": {
       "https://posit-dev.github.io/*": "allow",

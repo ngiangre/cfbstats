@@ -1,0 +1,71 @@
+---
+title: "Pipeline"
+vignette: >
+  %\VignetteIndexEntry{Pipeline}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(cfbstats)
+library(targets)
+library(dplyr)
+# Under altdoc, docs render in a temp dir; point the knit working directory at
+# the project root so tar_read()/tar_mermaid() find the store, _targets.R, and R/.
+root <- Sys.getenv("CFBSTATS_ROOT")
+if (nzchar(root)) knitr::opts_knit$set(root.dir = root)
+```
+
+The processing pipeline is a [`targets`](https://books.ropensci.org/targets/)
+graph (decision 0004) — the single source of truth for how raw data becomes
+features, models, and results. The map below is **generated from the graph**, so
+it can't drift from what the code actually does.
+
+## Stages
+
+```{mermaid}
+flowchart LR
+  ingest[ingest\nCFBD API] --> clean[clean\nstandardize + coerce keys]
+  clean --> link[link\nplayer-season backbone + joins]
+  link --> features[features\nlongitudinal change]
+  features --> model[model\nexplain + predict]
+  model --> report[report\nsite + viz]
+  clean -.-> contracts[(data contracts)]
+  clean -.-> audit[(audit log)]
+  link -.-> audit
+  features -.-> audit
+```
+
+## Live dependency graph
+
+```{r}
+#| label: dag
+#| output: asis
+cat("```{mermaid}", tar_mermaid(), "```", sep = "\n")
+```
+
+## What remains
+
+Targets that are outdated (need to run) — a live view of what's left to build or
+refresh.
+
+```{r}
+#| label: outdated
+outdated <- tryCatch(tar_outdated(), error = function(e) character(0))
+if (length(outdated)) {
+  tibble::tibble(target = outdated)
+} else {
+  cat("All targets are up to date.")
+}
+```
+
+::: {.callout-important}
+## Known gaps
+`/roster` is now ingested, keyed on an authoritative `season` (stamped from the
+queried year — the endpoint's own `year` is the eligibility class). But roster
+**weight is static per player**, so the decision-0003 between-season
+`weight_delta` is not derivable and was dropped; we keep the static roster
+`weight`. The `model` and `report` stages are wired placeholders.
+:::

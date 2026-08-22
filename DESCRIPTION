@@ -2,7 +2,7 @@ Package: cfbstats
 Title: Forecast College Football Players' Paths to the NFL Draft
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
+    person("Nicholas", "Giangreco", , "nick.giangreco@gmail.com", role = c("aut", "cre"))
 Description: Tools and data pipelines for studying what shapes a college
     football player's path to the NFL draft, and how well draft outcomes can
     be forecast from information available during a player's career. Builds on
@@ -17,9 +17,27 @@ Depends:
 Imports: 
     cli,
     dplyr (>= 1.2.0),
+    purrr,
     rlang,
+    stats,
+    tibble,
+    tidyr,
     utils
 Suggests: 
+    altdoc,
     arrow,
+    gert,
+    ggiraph,
+    ggplot2,
+    httr2,
     pkgload,
-    pointblank
+    plotly,
+    pointblank,
+    piggyback,
+    reactable,
+    targets,
+    testthat (>= 3.0.0),
+    thematic,
+    visNetwork,
+    yaml
+Config/testthat/edition: 3

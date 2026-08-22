@@ -1,0 +1,60 @@
+---
+title: "Explore"
+vignette: >
+  %\VignetteIndexEntry{Explore}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(cfbstats)
+library(dplyr)
+library(targets)
+root <- Sys.getenv("CFBSTATS_ROOT")
+if (nzchar(root)) knitr::opts_knit$set(root.dir = root)
+```
+
+Interactive exemplars for the three chart families the project uses: **time
+series**, **2D**, and **3D**. Each reads a pipeline target, so the input → chart
+lineage is explicit. The default stack is R htmlwidgets (`plotly`, `ggiraph`);
+Observable JS is reserved for bespoke explorables (a later addition).
+
+```{r}
+#| label: data
+picks <- tar_read(picks) |>
+  filter(year >= 2013, !is.na(height), !is.na(weight), !is.na(overall))
+```
+
+## Time series — drafts per year
+
+```{r}
+#| label: fig-timeseries
+viz_drafts_by_season(tar_read(model_table))
+```
+
+## 2D — draft capital vs. physicals (hover for player)
+
+Each point is a drafted player; hover for the name. Color encodes draft round.
+
+```{r}
+#| label: fig-2d
+viz_scatter_2d(
+  dplyr::slice_sample(picks, n = min(1500, nrow(picks))),
+  x = weight, y = height, tooltip = name, color = round
+)
+```
+
+## 3D — height × weight × overall pick
+
+```{r}
+#| label: fig-3d
+viz_scatter_3d(picks, x = "height", y = "weight", z = "overall", color = "round")
+```
+
+::: {.callout-tip}
+These are templates, not findings — they demonstrate the wiring from a pipeline
+target to an interactive widget. Real analyses will pair model inputs with model
+results on the same page.
+:::

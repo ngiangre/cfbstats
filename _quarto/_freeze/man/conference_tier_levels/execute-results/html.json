@@ -1,0 +1,15 @@
+{
+  "hash": "373a6d042888949368ad74ffabc42cbe",
+  "result": {
+    "engine": "knitr",
+    "markdown": "## Conference tier levels {.unnumbered}\n\n\n### Description\n\nThe ordinal tiers used to classify a program's competitive level when\nmeasuring transfer <em>direction</em> (decision 0003). Higher is stronger, so a\nmove from a smaller level to a larger one is &quot;up&quot;.\n\n\n\n### Usage\n\n<pre><code class='language-R'>conference_tier_levels()\n</code></pre>\n\n\n### Value\n\nA named integer vector mapping tier label to level.\n\n\n\n### Examples\n\n::: {.cell}\n\n```{.r .cell-code}\nlibrary(\"cfbstats\")\n\nconference_tier_levels()\n```\n\n::: {.cell-output .cell-output-stdout}\n\n```\nFCS and below    Group of 5         Power \n            1             2             3 \n```\n\n\n:::\n:::\n\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

@@ -1,0 +1,38 @@
+name: data-refresh
+
+# Refresh CFBD data on a schedule and publish it as a GitHub release asset,
+# keeping large data out of git history. Kept separate from the site build.
+# Requires the CFBD_API_KEY repository secret.
+on:
+  schedule:
+    - cron: "0 9 * * 1" # weekly, Monday 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            local::.
+            any::piggyback
+
+      - name: Ingest CFBD data
+        run: Rscript data-raw/refresh.R
+
+      - name: Publish data as release asset
+        run: |
+          Rscript -e 'piggyback::pb_upload(list.files("data", pattern = "\\.parquet$", full.names = TRUE), repo = Sys.getenv("GITHUB_REPOSITORY"), tag = "data-latest")'

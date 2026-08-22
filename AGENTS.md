@@ -46,6 +46,39 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
   pipeline, fail fast. Add/update a contract with any data-touching code.
 - **Decision log:** record substantive decisions in `decisions/` (copy
   `TEMPLATE.md`, next number); distill spike-branch findings into an entry.
+  Decisions 0004–0006 cover `targets`, the lineage/audit layer, and the site.
+
+## Pipeline, lineage & site (in place)
+
+- **`_targets.R`** is the pipeline and single source of truth for the DAG
+  (decision 0004). Stages: **ingest → clean → link → features → model →
+  report**. Functions live in `R/` by stage: `ingest.R`, `clean.R`, `link.R`,
+  `features.R`, `model.R` (placeholder), `contracts.R`, `audit.R`, `viz.R`.
+  Ingest targets read committed `data/*.parquet` so the graph runs offline; a
+  fresh CFBD pull uses the `ingest_*()` functions (`data-raw/refresh.R`).
+- **Lineage/audit** (decision 0005): `audit_step()` emits a uniform per-step
+  record (row/col counts, rows dropped, key coverage, NA cells, schema hash,
+  contract pass/fail, git SHA) → the `audit_log` target. Data dictionaries in
+  `inst/dict/*.yml`. Known audit signals: `build_player_season` collapses the
+  long stats (~1.2M → ~144k rows); `link_coaches` inflates rows where a school
+  had >1 head coach in a season (intentional many-to-many).
+- **Site** (decision 0006): **`altdoc` owns the site** (`quarto_website`),
+  configured in `altdoc/quarto_website.yml`, built to `docs/` via
+  `altdoc::render_docs()`. Home = `README.md`; content pages are **vignettes**
+  (`vignettes/{about,data,pipeline,analysis,explore}.qmd`, surfaced via
+  `$ALTDOC_VIGNETTE_BLOCK`); Reference is auto-generated per-function from
+  `man/*.Rd` (`$ALTDOC_MAN_BLOCK`). Vignettes read the pipeline via `tar_read()`
+  and set the knit wd to the project root from the `CFBSTATS_ROOT` env var
+  (altdoc renders in a temp dir); they use `library(cfbstats)` and
+  `system.file("dict", ...)`, so the package must be installed to render. Viz is
+  hybrid: R htmlwidgets default (`plotly`/`ggiraph`/`reactable`), OJS later.
+  `vignettes/` is `.Rbuildignore`d (they need the pipeline/data, not CRAN).
+- **CI** (`.github/workflows/`): `check.yaml` (R CMD check + testthat + contract
+  fixtures), `site.yaml` (pull data release asset → `tar_make()` → render →
+  Pages), `data-refresh.yaml` (scheduled ingest → publish parquet via
+  `piggyback`). Site/refresh need `CFBD_API_KEY` and Pages enabled.
+- **Roster TODO:** `/roster` not yet ingested (decision 0003); pipeline uses an
+  empty roster so `weight_delta` is currently all `NA`.
 
 ## Conventions & stack
 
@@ -53,8 +86,8 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
   lazy/`collect()` pipelines. Comments brief and about *why*. Match scope.
 - Developed as an R package (`devtools`: `load_all`/`document`/`test`/`check`);
   reusable logic in `R/` with roxygen. `check()` is a conventions gate, not CRAN
-  prep — non-package material is `.Rbuildignore`d (decision 0002). Intended:
-  `targets`, parquet/DuckDB as GitHub release assets, Quarto site on Pages.
+  prep — non-package material is `.Rbuildignore`d (decision 0002). `check()` is
+  currently clean (0 errors/warnings/notes).
 
 ## Git
 

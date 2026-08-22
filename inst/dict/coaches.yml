@@ -1,0 +1,40 @@
+dataset: coaches
+source: CFBD /coaches (seasons block unnested)
+grain: one head-coach-season (head coaches only — no coordinators / S&C)
+key: coach_id + season; joins to player-seasons on (school == team, season)
+description: >
+  Head coaches with per-season program performance (SRS, SP+ overall/offense/
+  defense, wins). Coach *changes* between seasons are the v1 coaching features.
+columns:
+  - name: coach_id
+    type: int32
+    description: CFBD coach id.
+    provenance: raw (id)
+  - name: coach_name
+    type: string
+    description: firstName + lastName.
+    provenance: derived (clean_coaches)
+  - name: school
+    type: string
+    description: Program; join key to player-season team.
+    provenance: raw (seasons_school)
+  - name: season
+    type: int32
+    description: Season year.
+    provenance: raw (seasons_year)
+  - name: srs
+    type: double
+    description: Simple Rating System.
+    provenance: raw (seasons_srs)
+  - name: sp_overall
+    type: double
+    description: SP+ overall rating.
+    provenance: raw (seasons_spOverall)
+  - name: sp_offense
+    type: double
+    description: SP+ offense rating.
+    provenance: raw (seasons_spOffense)
+  - name: sp_defense
+    type: double
+    description: SP+ defense rating.
+    provenance: raw (seasons_spDefense)

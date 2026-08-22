@@ -55,3 +55,13 @@ rsconnect/
 
 /.quarto/
 **/*.quarto_ipynb
+
+# targets pipeline store
+/_targets/
+
+# Quarto site output
+/_site/
+_freeze/
+altdoc/freeze.rds
+_quarto/*
+!_quarto/_freeze/

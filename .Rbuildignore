@@ -11,3 +11,16 @@
 ^air\.toml$
 ^\.vscode$
 ^\.claude$
+^_targets\.R$
+^_targets$
+^_quarto\.yml$
+^data$
+^site$
+^altdoc$
+^vignettes$
+^docs$
+^docs$
+^_site$
+^_freeze$
+^\.quarto$
+^_quarto$

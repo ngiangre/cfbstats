@@ -48,8 +48,10 @@ hypotheses — judging performance, robustness, and forecasting ability.
   / FCS-and-below; see decision 0003). Derivable today from `player_stats`
   (~16% of players appear at ≥2 teams); optionally enriched via
   `/player/portal`.
-- **Physical development**: **weight gain/loss between seasons**, from the
-  `/roster` endpoint.
+- **Physical development**: intended as **weight gain/loss between seasons** from
+  `/roster`, but that endpoint reports a *static* weight per player (decision
+  0003 Outcome) — so v1 keeps the static roster weight only; a true
+  between-season delta needs another source.
 - **Longitudinal layer**: the above are **between-season change** features.
   We link each player's seasons chronologically (by athlete id) and attach
   lagged/delta features to the draft-eligible player-season row — a career
@@ -112,7 +114,7 @@ erDiagram
         string category
         string statType
         string stat
-        int weight_delta "derived: weight(t) - weight(t-1)"
+        int weight "static roster weight (no per-season delta; decision 0003)"
         bool transferred "derived: team(t) != team(t-1)"
         string transfer_direction "derived: up / lateral / down (3-tier)"
         bool hc_changed "derived: HC(t) != HC(t-1)"

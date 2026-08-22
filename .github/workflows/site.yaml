@@ -1,0 +1,66 @@
+name: site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Requires GitHub Pages to be enabled for the repo (Settings > Pages > "GitHub
+# Actions"). Data is not in git; it is pulled from a release asset published by
+# the data-refresh workflow, then the pipeline runs so the audit/DAG pages have
+# targets to read.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      # Vignettes read the pipeline from the project root under altdoc's build.
+      CFBSTATS_ROOT: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      # local::. installs the cfbstats package itself (vignettes call
+      # library(cfbstats)); altdoc builds the site, piggyback pulls the data.
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            local::.
+            any::altdoc
+            any::piggyback
+
+      - name: Download data assets
+        run: |
+          Rscript -e 'piggyback::pb_download(repo = Sys.getenv("GITHUB_REPOSITORY"), tag = "data-latest", dest = "data")'
+
+      - name: Run pipeline
+        run: Rscript -e 'targets::tar_make()'
+
+      # freeze = TRUE reuses the committed _quarto/_freeze/ cache so CI does not
+      # re-execute vignette code; renders are faster and deterministic (dec 0007).
+      - name: Render site (altdoc -> docs/)
+        run: Rscript -e 'altdoc::render_docs(freeze = TRUE)'
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,47 @@
+dataset: roster
+source: CFBD /roster (per year, 2010–2025)
+grain: one player-season on a team roster
+key: playerId (string, from id) + season
+description: >
+  Per-season physicals (height, weight), position, jersey, and hometown keyed by
+  athlete id, and a full player-season backbone (includes players with no
+  qualifying stat line, e.g. many linemen). New ingestion for decision 0003.
+  NOTE: `season` is stamped from the queried year — the endpoint's own `year`
+  field is the player's eligibility class (1-5), renamed `class_year`. Weight is
+  STATIC per player (repeated across seasons), so a between-season weight_delta
+  is not derivable here (decision 0003 Outcome).
+columns:
+  - name: playerId
+    type: string
+    description: Athlete id (from roster `id`) coerced to string.
+    provenance: derived (clean_roster)
+  - name: season
+    type: int32
+    description: Season year, stamped from the queried year (authoritative).
+    provenance: derived (ingest_roster stamps the query year)
+  - name: class_year
+    type: int32
+    description: >
+      Player eligibility class (1-5) — the endpoint's own `year` field, renamed.
+      NOT the season.
+    provenance: raw (year)
+  - name: team
+    type: string
+    description: Team.
+    provenance: raw
+  - name: position
+    type: string
+    description: Roster position.
+    provenance: raw
+  - name: height
+    type: int32
+    description: Height (inches).
+    provenance: raw
+  - name: weight
+    type: int32
+    description: Weight (lbs). Static per player across seasons (see note above).
+    provenance: raw
+  - name: home_state
+    type: string
+    description: Hometown state.
+    provenance: raw (homeState)

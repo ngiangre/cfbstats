@@ -1,0 +1,46 @@
+---
+title: "About"
+vignette: >
+  %\VignetteIndexEntry{About}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+`cfbstats` studies what shapes a college football player's path to the NFL
+draft, and how well it can be forecast from information available during their
+career. The full working plan lives in the project's `VISION.md`; this page is
+the short version.
+
+## The questions
+
+- What variables of a player's college career actually matter for turning pro?
+- Does the **head coach** matter (and later, coordinators / position / S&C
+  coaches)?
+- After each season, what is a player's **percent chance of being drafted**, by
+  position?
+
+## Scope (v1)
+
+- **Coaching:** head coach + program signal (wins, SRS, SP+), plus **coaching
+  changes** between seasons.
+- **Transfers:** whether a player changed schools, and the **direction** on a
+  season-aware 3-tier scale (Power / Group of 5 / FCS-and-below).
+- **Physical attributes:** roster height and weight. (Between-season *weight
+  change* was intended but the `/roster` weight is static per player, so it is
+  not derivable from that source — see the Data page.)
+- **Outcome:** drafted. **Population:** players with a stat line, in
+  draft-eligible seasons.
+
+## Guiding philosophy
+
+Breiman's *Two Cultures*, used side by side: **data models** for explanation and
+inference, **algorithmic models** for prediction — with **out-of-time
+validation** as the headline metric (a model predicting a draft class only sees
+data through the prior season).
+
+## How we work
+
+Decisions are recorded in an ADR-style **decision log**; logic is tested with
+`testthat` and data with `pointblank` **contracts** that run inside the
+pipeline. See the Data page for the resulting provenance record and the Pipeline
+page for the processing graph.

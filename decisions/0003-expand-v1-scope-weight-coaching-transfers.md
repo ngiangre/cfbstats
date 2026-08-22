@@ -114,6 +114,23 @@ Alternatives considered and rejected for v1:
 
 ## Outcome / what we learned
 
-_Filled in later._ Did directional transfers beat the transfer flag? Did roster
-weight coverage hold up for non-skill positions? Did id-linkage introduce any
+**Weight change is not derivable from `/roster` (2026-08-22).** Two findings
+came out of actually ingesting `/roster`:
+
+1. **The endpoint's `year` field is the player's eligibility class (1–5), not the
+   season.** Trusting it gave only ~29% key coverage that decayed to ~0% in
+   recent years. Stamping `season` from the *queried* year instead lifted
+   `(playerId, season)` match against the stats backbone to **99.5%** and weight
+   coverage to ~81%. `ingest_roster()` now stamps the season and renames the raw
+   field to `class_year`.
+2. **Roster weight is static per player** — repeated across every season. Of
+   ~43,700 multi-season players with a weight, **0** show any change. So a
+   between-season `weight_delta` is structurally always 0 and is **dropped**.
+   We keep the static roster `weight` as a physical attribute
+   (`add_roster_weight()`). A genuine physical-development feature would need a
+   different source (e.g. recruiting weight → draft weight span). The v1 "weight
+   gain/loss between seasons" goal is therefore **not met from `/roster`**; the
+   transfer-direction and coaching-change features are unaffected.
+
+Still open: did directional transfers beat the transfer flag? Any id-linkage
 surprises (id reuse, mid-season team changes)?
