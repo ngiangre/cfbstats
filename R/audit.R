@@ -13,8 +13,11 @@
 #' @return A short character hash.
 #' @export
 schema_hash <- function(data) {
-  spec <- paste(names(data), vapply(data, \(x) class(x)[1], character(1)),
-    sep = ":", collapse = "|"
+  spec <- paste(
+    names(data),
+    vapply(data, \(x) class(x)[1], character(1)),
+    sep = ":",
+    collapse = "|"
   )
   substr(rlang::hash(spec), 1, 12)
 }
@@ -71,7 +74,11 @@ audit_step <- function(
     stage = stage,
     n_rows_in = if (is.null(input)) NA_integer_ else nrow(input),
     n_rows_out = nrow(output),
-    rows_delta = if (is.null(input)) NA_integer_ else nrow(output) - nrow(input),
+    rows_delta = if (is.null(input)) {
+      NA_integer_
+    } else {
+      nrow(output) - nrow(input)
+    },
     n_cols_out = ncol(output),
     n_keys_out = n_keys_out,
     n_na_cells = sum(vapply(output, \(x) sum(is.na(x)), integer(1))),

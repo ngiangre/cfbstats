@@ -29,7 +29,10 @@ viz_drafts_by_season <- function(player_season) {
     dplyr::arrange(.data$draft_year)
   plotly::plot_ly(
     d,
-    x = ~draft_year, y = ~n_drafted, type = "scatter", mode = "lines+markers"
+    x = ~draft_year,
+    y = ~n_drafted,
+    type = "scatter",
+    mode = "lines+markers"
   ) |>
     plotly::layout(
       title = "Drafted players by draft year",
@@ -49,7 +52,10 @@ viz_drafts_by_season <- function(player_season) {
 viz_scatter_2d <- function(data, x, y, tooltip, color = NULL) {
   rlang::check_installed(c("ggplot2", "ggiraph"))
   mapping <- ggplot2::aes(
-    x = {{ x }}, y = {{ y }}, tooltip = {{ tooltip }}, data_id = {{ tooltip }}
+    x = {{ x }},
+    y = {{ y }},
+    tooltip = {{ tooltip }},
+    data_id = {{ tooltip }}
   )
   if (!rlang::quo_is_null(rlang::enquo(color))) {
     mapping$colour <- ggplot2::aes(colour = {{ color }})$colour
@@ -70,12 +76,16 @@ viz_scatter_2d <- function(data, x, y, tooltip, color = NULL) {
 viz_scatter_3d <- function(data, x, y, z, color = NULL) {
   rlang::check_installed("plotly")
   args <- list(
-    data = data, x = stats::as.formula(paste0("~", x)),
+    data = data,
+    x = stats::as.formula(paste0("~", x)),
     y = stats::as.formula(paste0("~", y)),
     z = stats::as.formula(paste0("~", z)),
-    type = "scatter3d", mode = "markers",
+    type = "scatter3d",
+    mode = "markers",
     marker = list(size = 3)
   )
-  if (!is.null(color)) args$color <- stats::as.formula(paste0("~", color))
+  if (!is.null(color)) {
+    args$color <- stats::as.formula(paste0("~", color))
+  }
   do.call(plotly::plot_ly, args)
 }

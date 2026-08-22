@@ -21,7 +21,10 @@ test_that("contract_conference_tiers passes a well-formed lookup and its coverag
 test_that("contract_conference_tiers flags an unmapped conference", {
   skip_if_not_installed("pointblank")
   tiers <- tibble::tibble(
-    season = 2015L, conference = "SEC", tier = 3L, tier_label = "Power"
+    season = 2015L,
+    conference = "SEC",
+    tier = 3L,
+    tier_label = "Power"
   )
   stats <- tibble::tibble(season = 2015L, conference = c("SEC", "MAC"))
   agents <- contract_conference_tiers(tiers, stats, stop_on_fail = FALSE)
