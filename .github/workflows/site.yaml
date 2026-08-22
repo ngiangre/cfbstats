@@ -46,9 +46,11 @@ jobs:
             any::altdoc
             any::piggyback
 
+      # data/ is gitignored, so it is absent on a fresh checkout; pb_download
+      # will not create the dest dir and errors ("Failed to open file ...").
       - name: Download data assets
         run: |
-          Rscript -e 'piggyback::pb_download(repo = Sys.getenv("GITHUB_REPOSITORY"), tag = "data-latest", dest = "data")'
+          Rscript -e 'dir.create("data", showWarnings = FALSE); piggyback::pb_download(repo = Sys.getenv("GITHUB_REPOSITORY"), tag = "data-latest", dest = "data")'
 
       - name: Run pipeline
         run: Rscript -e 'targets::tar_make()'
