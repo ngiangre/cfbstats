@@ -1,5 +1,10 @@
 # cfbstats
 
+> [!WARNING]
+> **Work in progress.** This project is under active development and will
+> change frequently and without notice — data, code, methods, and conclusions
+> may all shift. Nothing here should be treated as stable or final.
+
 **What makes a college football player go pro?**
 
 Every year, a small fraction of college football players hear their name called
