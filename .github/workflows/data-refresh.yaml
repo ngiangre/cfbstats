@@ -33,6 +33,13 @@ jobs:
       - name: Ingest CFBD data
         run: Rscript data-raw/refresh.R
 
+      # pb_upload requires the release to already exist, so create the
+      # data-latest release on first run before uploading the parquet assets.
       - name: Publish data as release asset
         run: |
-          Rscript -e 'piggyback::pb_upload(list.files("data", pattern = "\\.parquet$", full.names = TRUE), repo = Sys.getenv("GITHUB_REPOSITORY"), tag = "data-latest")'
+          Rscript -e '
+            repo <- Sys.getenv("GITHUB_REPOSITORY")
+            tags <- tryCatch(piggyback::pb_releases(repo)$tag_name, error = function(e) character())
+            if (!"data-latest" %in% tags) piggyback::pb_release_create(repo, tag = "data-latest")
+            piggyback::pb_upload(list.files("data", pattern = "\\.parquet$", full.names = TRUE), repo = repo, tag = "data-latest")
+          '

@@ -16,6 +16,8 @@ layer, and the documentation site, all under version control.
 - Data contracts (`pointblank`) and unit tests (`testthat`) run in the pipeline.
 - v1 scope — weight/coaching/transfer change features and the drafted outcome.
   See [decision 0003](https://github.com/ngiangre/cfbstats/blob/main/decisions/0003-expand-v1-scope-weight-coaching-transfers.md).
+- The `data-refresh` workflow now creates the `data-latest` release on first run
+  (before uploading), so bootstrapping the data asset no longer needs a manual step.
 
 ## Documentation site
 
