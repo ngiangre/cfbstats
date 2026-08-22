@@ -3,6 +3,9 @@
 ^\.posit$
 ^\.Renviron$
 ^CLAUDE\.md$
+^AGENTS\.md$
+^VISION\.md$
+^decisions$
 ^air\.toml$
 ^\.vscode$
 ^\.claude$

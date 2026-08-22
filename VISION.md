@@ -40,7 +40,20 @@ hypotheses — judging performance, robustness, and forecasting ability.
 ### v1
 
 - **Coaching**: head coach + program-level signal only (wins, `srs`, SP+
-  overall/offense/defense from the CFBD `/coaches` endpoint).
+  overall/offense/defense from the CFBD `/coaches` endpoint), plus
+  **coaching changes** — did the player's head coach change between seasons,
+  and did the player *follow* a coach (see decision 0003).
+- **Transfers**: whether a player changed schools between seasons, and the
+  **direction** of the move on a season-aware 3-tier scale (Power / Group of 5
+  / FCS-and-below; see decision 0003). Derivable today from `player_stats`
+  (~16% of players appear at ≥2 teams); optionally enriched via
+  `/player/portal`.
+- **Physical development**: **weight gain/loss between seasons**, from the
+  `/roster` endpoint.
+- **Longitudinal layer**: the above are **between-season change** features.
+  We link each player's seasons chronologically (by athlete id) and attach
+  lagged/delta features to the draft-eligible player-season row — a career
+  sequence, not independent snapshots.
 - **Outcome**: drafted (from the CFBD `/draft/picks` endpoint).
 - **Population (denominator)**: every player with a college stat line, limited
   to their **draft-eligible seasons**.
@@ -65,14 +78,27 @@ CFBD API (`https://api.collegefootballdata.com`), key in `CFBD_API_KEY`:
 - `/stats/player/season` — player season stats (currently **long** format:
   one row per category/statType/stat).
 - `/coaches` — head coaches with per-season performance.
+- `/roster` (by year) — per-season height, **weight**, position, jersey, and
+  hometown, keyed by athlete `id`. Source for weight-change features and a
+  full player-season backbone (includes players with no qualifying stat line).
+- `/player/portal` (optional, recent years) — transfer-portal metadata
+  (stars, rating, transfer date) to enrich transfer detection.
 
 Plus future scraped sources for assistant coaches.
 
 ### Data model (ERD sketch)
 
+Athlete `id` is the canonical player key (decision 0003): `player_stats.playerId`,
+`roster.id`, and (coerced to string) `picks.collegeAthleteId` share one
+namespace. A player's seasons are linked chronologically by that id to derive
+the longitudinal **change** features (`weight_delta`, `transferred`,
+`transfer_direction`, `hc_changed`, `followed_coach`).
+
 ```mermaid
 erDiagram
     PLAYER_SEASON }o--|| TEAM_SEASON : "played for"
+    PLAYER_SEASON ||--|| ROSTER_SEASON : "has physicals"
+    PLAYER_SEASON ||--o| PLAYER_SEASON : "prior season (lag)"
     TEAM_SEASON }o--|| HEAD_COACH_SEASON : "coached by"
     PLAYER_SEASON ||--o| DRAFT_PICK : "may result in"
 
@@ -86,6 +112,19 @@ erDiagram
         string category
         string statType
         string stat
+        int weight_delta "derived: weight(t) - weight(t-1)"
+        bool transferred "derived: team(t) != team(t-1)"
+        string transfer_direction "derived: up / lateral / down (3-tier)"
+        bool hc_changed "derived: HC(t) != HC(t-1)"
+        bool followed_coach "derived: new HC == prior-team HC"
+    }
+    ROSTER_SEASON {
+        string id
+        int season
+        int weight
+        int height
+        string position
+        string homeState
     }
     DRAFT_PICK {
         int collegeAthleteId
@@ -116,9 +155,15 @@ erDiagram
 
 ### Known data issues to resolve early
 
-- **Player linkage**: `picks.collegeAthleteId` (int) vs
-  `player_stats.playerId` (string). Current code matches on **name**, which is
-  fragile. A reliable player key is a prerequisite for modeling.
+- **Player linkage** (resolved — decision 0003): `picks.collegeAthleteId`
+  (int), `player_stats.playerId` (string), and `roster.id` (string) are the
+  **same athlete-id namespace**. Coerce `collegeAthleteId` to string and join
+  directly; ~98–100% of picks from draft year 2013 on carry an id (missing ids
+  are pre-2013, outside the 2010–2025 window). Name matching is retired to a
+  QA cross-check only.
+- **Conference tiers are season-aware**: build a `season × conference → tier`
+  lookup (Power / G5 / FCS-and-below) because names and memberships shift over
+  2010–2025 (Pac-12 collapse, Big East → AAC, realignment).
 - **Long stats**: `player_stats` must be pivoted into position-relevant
   features; discovering which stats carry information is part of the work.
 - **Team/coach join keys**: link player-season → head-coach-season via
