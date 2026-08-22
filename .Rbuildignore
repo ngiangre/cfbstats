@@ -1,5 +1,7 @@
 ^LICENSE\.md$
 ^data-raw$
+^data$
+^\.github$
 ^\.posit$
 ^\.Renviron$
 ^CLAUDE\.md$

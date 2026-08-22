@@ -5,10 +5,19 @@
   "permission": {
     "edit": {
       "*.md": "allow",
-      "*.R": "allow"
+      "*.R": "allow",
+      "*/DESCRIPTION": "allow"
     },
     "executeCode": {
       "*": "allow"
+    },
+    "bash": {
+      "air *": "allow",
+      "echo *": "allow"
+    },
+    "webfetch": {
+      "https://posit-dev.github.io/*": "allow",
+      "https://raw.githubusercontent.com/*": "allow"
     }
   }
 }

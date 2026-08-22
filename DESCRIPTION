@@ -1,13 +1,25 @@
 Package: cfbstats
-Title: What the Package Does (One Line, Title Case)
+Title: Forecast College Football Players' Paths to the NFL Draft
 Version: 0.0.0.9000
 Authors@R: 
     person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Description: Tools and data pipelines for studying what shapes a college
+    football player's path to the NFL draft, and how well draft outcomes can
+    be forecast from information available during a player's career. Builds on
+    the College Football Data (CFBD) API and pursues both explanatory and
+    predictive modeling.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.0.0
+RoxygenNote: 7.3.2
 Depends: 
-    R (>= 3.5)
-LazyData: true
+    R (>= 4.1)
+Imports: 
+    cli,
+    dplyr (>= 1.2.0),
+    rlang,
+    utils
+Suggests: 
+    arrow,
+    pkgload,
+    pointblank
