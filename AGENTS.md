@@ -115,3 +115,8 @@ pointblank) pass before merging data/model changes. **Before merging a feature
 branch into `main`, update `NEWS.md`** with the user-facing changes (linking any
 relevant decision record via full GitHub URL) — an empty changelog entry is a
 smell, and R CMD check flags a NEWS with no entries (decision 0007).
+
+**Formatting is enforced by CI** (`format-check.yaml` runs `air format . --check`)
+but is **not** part of `devtools::check()`. Run `air format .` before pushing, or
+enable the tracked pre-commit hook once per clone: `git config core.hooksPath
+.githooks` (it mirrors the CI check; skips gracefully if `air` isn't on PATH).
