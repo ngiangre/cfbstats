@@ -9,7 +9,10 @@
 # the cleaned target schema (identity where the target is the raw read).
 dict_schema_specs <- list(
   picks = list(file = "picks.parquet", clean = clean_picks),
-  player_stats = list(file = "player_stats.parquet", clean = clean_player_stats),
+  player_stats = list(
+    file = "player_stats.parquet",
+    clean = clean_player_stats
+  ),
   coaches = list(file = "coaches.parquet", clean = clean_coaches),
   teams = list(file = "teams.parquet", clean = clean_teams),
   roster = list(file = "roster.parquet", clean = clean_roster),
@@ -44,7 +47,11 @@ test_that("each inst/dict/*.yml documents exactly its cleaned target schema", {
 
     dict <- yaml::read_yaml(file.path(dict_dir, paste0(ds, ".yml")))
     documented <- vapply(dict$columns, function(col) col$name, character(1))
-    documented_type <- vapply(dict$columns, function(col) col$type, character(1))
+    documented_type <- vapply(
+      dict$columns,
+      function(col) col$type,
+      character(1)
+    )
     names(documented_type) <- documented
 
     # Set equality both ways: no undocumented columns, no phantom entries.
@@ -54,6 +61,10 @@ test_that("each inst/dict/*.yml documents exactly its cleaned target schema", {
     common <- intersect(documented, names(actual_type))
     expected <- unname(dict_type_to_typeof[documented_type[common]])
     got <- unname(actual_type[common])
-    expect_equal(got, expected, info = paste0(ds, ": ", paste(common, collapse = ", ")))
+    expect_equal(
+      got,
+      expected,
+      info = paste0(ds, ": ", paste(common, collapse = ", "))
+    )
   }
 })
