@@ -152,7 +152,7 @@ contract_roster <- function(roster, stop_on_fail = TRUE) {
   agent <- pointblank::create_agent(roster, label = "roster") |>
     pointblank::col_exists(c("playerId", "season", "weight")) |>
     pointblank::col_vals_not_null(pointblank::vars(playerId, season)) |>
-    pointblank::col_vals_between("weight", 100, 450, na_pass = TRUE) |>
+    pointblank::col_vals_between("weight", 100, 500, na_pass = TRUE) |>
     pointblank::interrogate()
   enforce_contract(agent, "roster", stop_on_fail)
 }

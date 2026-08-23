@@ -92,7 +92,7 @@ viz_team_logos <- function(teams, n = 25) {
   teams |>
     dplyr::filter(!is.na(.data$logo_light)) |>
     dplyr::arrange(.data$team) |>
-    head(n) |>
+    utils::head(n) |>
     dplyr::select(
       "logo_light",
       "team",
@@ -137,7 +137,7 @@ viz_drafts_by_team <- function(model_table, teams, n = 15) {
     dplyr::filter(.data$drafted) |>
     dplyr::distinct(.data$playerId, .data$team) |>
     dplyr::count(.data$team, name = "n_drafted", sort = TRUE) |>
-    head(n) |>
+    utils::head(n) |>
     link_team_meta(teams) |>
     dplyr::mutate(
       fill = dplyr::coalesce(.data$color, "#4c78a8"),

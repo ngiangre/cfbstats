@@ -112,6 +112,9 @@ clean_teams <- function(teams) {
 #' Standardizes roster physicals to the athlete-id key. Column names may vary by
 #' CFBD version; this selects defensively via [dplyr::any_of()].
 #'
+#' A listed `weight` of `0` is an impossible value used as a missing-data
+#' placeholder in `/roster`, so it is coerced to `NA` (decision 0009 Outcome).
+#'
 #' @param roster Raw roster tibble from [ingest_roster()].
 #'
 #' @return A cleaned roster tibble keyed by string `playerId` and `season`.
@@ -133,5 +136,11 @@ clean_roster <- function(roster) {
         home_city = "homeCity"
       ))
     ) |>
-    dplyr::mutate(season = as.integer(.data$season))
+    dplyr::mutate(
+      season = as.integer(.data$season),
+      dplyr::across(
+        dplyr::any_of("weight"),
+        \(w) dplyr::if_else(w == 0, NA_integer_, as.integer(w))
+      )
+    )
 }

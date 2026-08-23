@@ -1,4 +1,4 @@
-# cfbstats (development version)
+# cfbstats 0.0.0.9000 (development version)
 
 First tracked release of the project scaffolding. The repo now carries the full
 ingest → clean → link → features → model → report pipeline, its lineage/audit
@@ -18,6 +18,14 @@ layer, and the documentation site, all under version control.
   See [decision 0003](https://github.com/ngiangre/cfbstats/blob/main/decisions/0003-expand-v1-scope-weight-coaching-transfers.md).
 - The `data-refresh` workflow now creates the `data-latest` release on first run
   (before uploading), so bootstrapping the data asset no longer needs a manual step.
+- Roster finalized as a first-class pipeline target (`roster_file` → `raw_roster`
+  → `roster`), replacing the empty-roster fallback; `add_roster_weight()` attaches
+  the static roster `weight`. Between-season `weight_delta` is dropped as not
+  derivable from CFBD `/roster` (weight is static per player: 0 of 64,350
+  multi-season players vary). Enforcing the roster contract surfaced a
+  data-quality issue the fallback had hidden: `clean_roster()` now coerces a
+  placeholder `weight` of `0` to `NA`, and the contract weight range is 100–500 lb.
+  See [decision 0009](https://github.com/ngiangre/cfbstats/blob/main/decisions/0009-finalize-roster-drop-weight-delta.md).
 - Team logos & colors: a `teams` display dimension sourced from CFBD `/teams`
   (`ingest_teams()`/`clean_teams()`, `data/teams.parquet`), joined by school name
   via `link_team_meta()` at the report layer only (kept off the model path).

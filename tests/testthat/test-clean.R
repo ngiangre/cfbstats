@@ -73,3 +73,14 @@ test_that("clean_roster keys on a string playerId", {
   expect_equal(out$season, 2018L)
   expect_true("weight" %in% names(out))
 })
+
+test_that("clean_roster coerces a placeholder weight of 0 to NA", {
+  raw <- tibble::tibble(
+    id = c(1L, 2L),
+    season = c(2019L, 2019L),
+    weight = c(0L, 240L)
+  )
+  out <- clean_roster(raw)
+  expect_true(is.na(out$weight[out$playerId == "1"]))
+  expect_equal(out$weight[out$playerId == "2"], 240L)
+})

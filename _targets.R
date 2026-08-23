@@ -17,29 +17,6 @@ tar_option_set(
 # Load all package functions (R/).
 targets::tar_source()
 
-# Roster parquet is not yet ingested (decision 0003 TODO). Until then, provide an
-# empty roster with the raw schema so downstream steps degrade gracefully
-# (weight_delta becomes NA) rather than breaking the DAG.
-read_roster_if_present <- function() {
-  path <- "data/roster.parquet"
-  if (file.exists(path)) {
-    arrow::read_parquet(path)
-  } else {
-    cli::cli_inform(
-      "No {.file data/roster.parquet} yet; using an empty roster (decision 0003 TODO)."
-    )
-    tibble::tibble(
-      id = integer(),
-      year = integer(),
-      team = character(),
-      position = character(),
-      height = integer(),
-      weight = integer(),
-      homeState = character()
-    )
-  }
-}
-
 list(
   # ---- ingest: track committed raw files, then read them --------------------
   tar_target(picks_file, "data/picks.parquet", format = "file"),
@@ -47,12 +24,13 @@ list(
   tar_target(coaches_file, "data/coaches.parquet", format = "file"),
   tar_target(teams_file, "data/teams.parquet", format = "file"),
   tar_target(tiers_file, "data/conference_tiers.parquet", format = "file"),
+  tar_target(roster_file, "data/roster.parquet", format = "file"),
   tar_target(raw_picks, arrow::read_parquet(picks_file)),
   tar_target(raw_player_stats, arrow::read_parquet(player_stats_file)),
   tar_target(raw_coaches, arrow::read_parquet(coaches_file)),
   tar_target(raw_teams, arrow::read_parquet(teams_file)),
   tar_target(tiers, arrow::read_parquet(tiers_file)),
-  tar_target(raw_roster, read_roster_if_present()),
+  tar_target(raw_roster, arrow::read_parquet(roster_file)),
 
   # ---- clean ----------------------------------------------------------------
   tar_target(picks, clean_picks(raw_picks)),

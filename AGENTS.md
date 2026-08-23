@@ -18,6 +18,7 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
 | `data/picks.parquet` | one drafted player | `collegeAthleteId` (int); position, height, weight, pre-draft ranking, hometown |
 | `data/player_stats.parquet` | **long**: player-season-stat | `playerId` (string); pivot `category`/`statType`/`stat` |
 | `data/coaches.parquet` | one head-coach-season | head coaches only |
+| `data/roster.parquet` | one player-season on a roster | `id`→`playerId` (string) + `season`; physicals/position/hometown. Weight is **static** per player (decision 0009) |
 | `data/teams.parquet` | one team (program) | join by school **name** (`team`); logos/colors, DISPLAY only (decision 0008) |
 | `data/conference_tiers.parquet` | season × conference | tier 3 Power / 2 G5 / 1 FCS-and-below (decision 0003) |
 
@@ -39,9 +40,13 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
 - **Watch for silent row loss on joins.** Validate row counts before/after.
 - **Coaches are head coaches only** (no coordinators/S&C). Coach *changes*
   between seasons are v1 features derived from `coaches.parquet`.
-- **v1 change features** (decision 0003) — weight delta (`/roster`), transfers +
-  direction (via the season-aware tier lookup), coaching changes — require
-  linking a player's seasons chronologically by athlete id.
+- **v1 change features** (decision 0003) — transfers + direction (via the
+  season-aware tier lookup) and coaching changes — require linking a player's
+  seasons chronologically by athlete id. **No between-season `weight_delta`:**
+  CFBD `/roster` reports a *static* weight per player (0 of 64,350 multi-season
+  players vary), so only the static `weight` is attached (decision 0009).
+  `clean_roster` coerces a placeholder `weight` of `0` to `NA`; the roster
+  contract enforces a 100–500 lb range (decision 0009).
 - **Conference tiers are season-aware** (Pac-12 collapse, Big East → AAC, WAC
   dropping FBS football); use the lookup, don't hard-code.
 
@@ -87,8 +92,10 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
   fixtures), `site.yaml` (pull data release asset → `tar_make()` → render →
   Pages), `data-refresh.yaml` (scheduled ingest → publish parquet via
   `piggyback`). Site/refresh need `CFBD_API_KEY` and Pages enabled.
-- **Roster TODO:** `/roster` not yet ingested (decision 0003); pipeline uses an
-  empty roster so `weight_delta` is currently all `NA`.
+- **Roster is a first-class target** (`roster_file` → `raw_roster` → `roster`,
+  decision 0009): `data/roster.parquet` is ingested by `refresh.R`, published on
+  the `data-latest` release, and read like the other tables. `add_roster_weight`
+  attaches the static `weight` (~81% coverage). No `weight_delta` (see above).
 
 ## Conventions & stack
 

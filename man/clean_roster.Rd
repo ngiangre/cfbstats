@@ -16,3 +16,7 @@ A cleaned roster tibble keyed by string \code{playerId} and \code{season}.
 Standardizes roster physicals to the athlete-id key. Column names may vary by
 CFBD version; this selects defensively via \code{\link[dplyr:reexports]{dplyr::any_of()}}.
 }
+\details{
+A listed \code{weight} of \code{0} is an impossible value used as a missing-data
+placeholder in \verb{/roster}, so it is coerced to \code{NA} (decision 0009 Outcome).
+}

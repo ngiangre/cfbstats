@@ -39,8 +39,11 @@ columns:
     provenance: raw
   - name: weight
     type: int32
-    description: Weight (lbs). Static per player across seasons (see note above).
-    provenance: raw
+    description: >
+      Weight (lbs). Static per player across seasons (see note above). A raw
+      value of 0 is a missing-data placeholder, coerced to NA in clean_roster
+      (decision 0009). Contract range 100-500, NA-pass.
+    provenance: raw (0 -> NA in clean_roster)
   - name: home_state
     type: string
     description: Hometown state.

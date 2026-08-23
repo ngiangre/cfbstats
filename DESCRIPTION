@@ -29,6 +29,7 @@ Suggests:
     gert,
     ggiraph,
     ggplot2,
+    htmltools,
     httr2,
     pkgload,
     plotly,
