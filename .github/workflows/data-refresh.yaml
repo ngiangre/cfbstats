@@ -5,7 +5,7 @@ name: data-refresh
 # Requires the CFBD_API_KEY repository secret.
 on:
   schedule:
-    - cron: "0 9 * * 1" # weekly, Monday 09:00 UTC
+    - cron: "0 13 * * 0" # weekly, Sunday 13:00 UTC (~09:00 ET; cron is fixed UTC so it drifts an hour across DST)
   workflow_dispatch:
 
 permissions:
