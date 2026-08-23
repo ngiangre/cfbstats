@@ -104,4 +104,7 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
 Solo repo. `main` always deployable; short-lived `feat/`/`data/`/`model/`
 branches; **squash-merge** for a linear history; throwaway `spike/` branches
 never merged. Conventional Commits (`type(scope): summary`). Let CI (testthat +
-pointblank) pass before merging data/model changes.
+pointblank) pass before merging data/model changes. **Before merging a feature
+branch into `main`, update `NEWS.md`** with the user-facing changes (linking any
+relevant decision record via full GitHub URL) — an empty changelog entry is a
+smell, and R CMD check flags a NEWS with no entries (decision 0007).
