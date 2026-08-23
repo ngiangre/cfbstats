@@ -18,6 +18,10 @@ columns:
     type: string
     description: Program; join key to player-season team.
     provenance: raw (seasons_school)
+  - name: conference
+    type: string
+    description: Program's conference that season.
+    provenance: raw (seasons_conference)
   - name: season
     type: int32
     description: Season year.
@@ -38,3 +42,15 @@ columns:
     type: double
     description: SP+ defense rating.
     provenance: raw (seasons_spDefense)
+  - name: games
+    type: int32
+    description: Games coached that season.
+    provenance: raw (seasons_games)
+  - name: wins
+    type: int32
+    description: Regular-season wins.
+    provenance: raw (seasons_wins)
+  - name: losses
+    type: int32
+    description: Regular-season losses.
+    provenance: raw (seasons_losses)

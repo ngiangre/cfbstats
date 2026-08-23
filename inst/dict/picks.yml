@@ -5,10 +5,36 @@ key: collegeAthleteId (int) → playerId (string, coerced; decision 0003)
 description: >
   Historical NFL draft picks. The modeling outcome (drafted). Joins to player
   stats and roster on the shared athlete-id namespace once coerced to string.
+  clean_picks passes every raw column through (adding playerId and drafted), so
+  this documents the full cleaned schema.
 columns:
   - name: collegeAthleteId
     type: int32
-    description: CFBD athlete id; the canonical player key (decision 0003).
+    description: CFBD college athlete id; the canonical player key (decision 0003).
+    provenance: raw
+  - name: nflAthleteId
+    type: int32
+    description: CFBD NFL athlete id (not used for the college-side join).
+    provenance: raw
+  - name: collegeId
+    type: int32
+    description: CFBD college team id.
+    provenance: raw
+  - name: collegeTeam
+    type: string
+    description: College team.
+    provenance: raw
+  - name: collegeConference
+    type: string
+    description: College conference.
+    provenance: raw
+  - name: nflTeamId
+    type: int32
+    description: CFBD id of the drafting NFL team.
+    provenance: raw
+  - name: nflTeam
+    type: string
+    description: Drafting NFL team.
     provenance: raw
   - name: year
     type: int32
@@ -22,13 +48,17 @@ columns:
     type: int32
     description: Draft round.
     provenance: raw
+  - name: pick
+    type: int32
+    description: Pick number within the round.
+    provenance: raw
+  - name: name
+    type: string
+    description: Player display name (QA / display only — do not join on name).
+    provenance: raw
   - name: position
     type: string
     description: Player position at draft.
-    provenance: raw
-  - name: collegeTeam
-    type: string
-    description: College team.
     provenance: raw
   - name: height
     type: int32
@@ -42,9 +72,37 @@ columns:
     type: int32
     description: Pre-draft overall ranking.
     provenance: raw
+  - name: preDraftPositionRanking
+    type: int32
+    description: Pre-draft ranking within position.
+    provenance: raw
+  - name: preDraftGrade
+    type: int32
+    description: Pre-draft scouting grade.
+    provenance: raw
+  - name: hometownInfo_city
+    type: string
+    description: Hometown city (unnested from hometownInfo).
+    provenance: raw
   - name: hometownInfo_state
     type: string
     description: Hometown state (unnested from hometownInfo).
+    provenance: raw
+  - name: hometownInfo_country
+    type: string
+    description: Hometown country (unnested from hometownInfo).
+    provenance: raw
+  - name: hometownInfo_latitude
+    type: string
+    description: Hometown latitude, stored as string in the raw feed.
+    provenance: raw
+  - name: hometownInfo_longitude
+    type: string
+    description: Hometown longitude, stored as string in the raw feed.
+    provenance: raw
+  - name: hometownInfo_countyFips
+    type: string
+    description: Hometown county FIPS code, stored as string in the raw feed.
     provenance: raw
   - name: playerId
     type: string

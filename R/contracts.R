@@ -30,6 +30,23 @@ contract_picks <- function(picks, stop_on_fail = TRUE) {
   # 2010-2025 stats window; bound the year check accordingly.
   agent <- pointblank::create_agent(picks, label = "picks") |>
     pointblank::col_exists(c("collegeAthleteId", "year", "round", "overall")) |>
+    # Columns documented in inst/dict/picks.yml that clean_picks passes through.
+    pointblank::col_exists(c(
+      "nflAthleteId",
+      "collegeId",
+      "collegeConference",
+      "nflTeamId",
+      "nflTeam",
+      "pick",
+      "name",
+      "preDraftPositionRanking",
+      "preDraftGrade",
+      "hometownInfo_city",
+      "hometownInfo_country",
+      "hometownInfo_latitude",
+      "hometownInfo_longitude",
+      "hometownInfo_countyFips"
+    )) |>
     pointblank::col_vals_between("year", 1936, 2026) |>
     pointblank::col_vals_between("round", 1, 30, na_pass = TRUE) |>
     pointblank::interrogate()
@@ -69,7 +86,7 @@ contract_player_stats <- function(player_stats, stop_on_fail = TRUE) {
 contract_coaches <- function(coaches, stop_on_fail = TRUE) {
   rlang::check_installed("pointblank")
   agent <- pointblank::create_agent(coaches, label = "coaches") |>
-    pointblank::col_exists(c("coach_id", "school", "season", "srs")) |>
+    pointblank::col_exists(c("coach_id", "school", "season", "srs", "wins")) |>
     pointblank::col_vals_not_null(pointblank::vars(coach_id, school, season)) |>
     pointblank::col_vals_between("season", 1869, 2026) |>
     pointblank::interrogate()

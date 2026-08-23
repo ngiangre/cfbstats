@@ -14,6 +14,13 @@ layer, and the documentation site, all under version control.
   target; data dictionaries in `inst/dict/`.
   See [decision 0005](https://github.com/ngiangre/cfbstats/blob/main/decisions/0005-lineage-and-audit-design.md).
 - Data contracts (`pointblank`) and unit tests (`testthat`) run in the pipeline.
+- Data dictionaries reconciled with the cleaned schema and now guarded by a
+  test: `inst/dict/{coaches,roster,picks}.yml` were completed (coaches gains
+  `conference`/`games`/`wins`/`losses`, roster gains `jersey`/`home_city`, picks
+  documents all 26 pass-through columns), `contract_coaches()`/`contract_picks()`
+  assert the added columns, and `tests/testthat/test-dict.R` asserts every
+  `inst/dict/*.yml` matches its target's column names and types.
+  See [decision 0010](https://github.com/ngiangre/cfbstats/blob/main/decisions/0010-reviewer-skills-and-dict-parity-test.md).
 - v1 scope — weight/coaching/transfer change features and the drafted outcome.
   See [decision 0003](https://github.com/ngiangre/cfbstats/blob/main/decisions/0003-expand-v1-scope-weight-coaching-transfers.md).
 - The `data-refresh` workflow now creates the `data-latest` release on first run
@@ -49,6 +56,14 @@ layer, and the documentation site, all under version control.
   work here, with this changelog linked from the site.
   See [decision 0007](https://github.com/ngiangre/cfbstats/blob/main/decisions/0007-feature-branch-news-merge-workflow.md).
 - Set the package author/maintainer.
+- Added three invocable `.claude/skills/` skills: `cfbstats` (slimmed to a
+  pointer to `AGENTS.md`/`VISION.md`/dictionaries), `fan-experience-improver`
+  (edits the fan-facing site toward the non-technical fan audience while
+  protecting the technical pages), and `architecture-improver` (keeps the
+  pipeline, data model, and conventions legible and auditable, works
+  test/contract-first, and checks that graphics/models preserve expected counts
+  and subsets).
+  See [decision 0010](https://github.com/ngiangre/cfbstats/blob/main/decisions/0010-reviewer-skills-and-dict-parity-test.md).
 
 The full decision log lives in
 [`decisions/`](https://github.com/ngiangre/cfbstats/tree/main/decisions).

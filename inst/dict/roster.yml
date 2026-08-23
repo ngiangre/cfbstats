@@ -44,7 +44,15 @@ columns:
       value of 0 is a missing-data placeholder, coerced to NA in clean_roster
       (decision 0009). Contract range 100-500, NA-pass.
     provenance: raw (0 -> NA in clean_roster)
+  - name: jersey
+    type: int32
+    description: Jersey number.
+    provenance: raw
   - name: home_state
     type: string
     description: Hometown state.
     provenance: raw (homeState)
+  - name: home_city
+    type: string
+    description: Hometown city.
+    provenance: raw (homeCity)
