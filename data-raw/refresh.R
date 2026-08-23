@@ -5,7 +5,7 @@
 
 pkgload::load_all(".", quiet = TRUE)
 
-years <- 2010:2025
+years <- 2010:2026
 dir.create("data", showWarnings = FALSE)
 
 arrow::write_parquet(ingest_picks(), "data/picks.parquet")

@@ -109,8 +109,8 @@ link_team_meta <- function(x, teams) {
 #' `collegeAthleteId` across eras, so a modern player's id can match a pick from
 #' decades earlier. Left unchecked that fans out the join (duplicating a
 #' player-season) and falsely attributes an ancient draft to a current player
-#' (decision 0011). Since a 2010-2025 college career can only lead to a
-#' 2010-2026 draft, picks outside `draft_window` are dropped before the join —
+#' (decision 0011). Since a 2010-2026 college career can only lead to a
+#' 2010-2027 draft, picks outside `draft_window` are dropped before the join —
 #' this removes the pre-window collision artifacts entirely. The lookup is then
 #' collapsed to **one pick per `playerId`** (most recent, a guard against any
 #' future intra-window collision), so the join is strictly 1:1 on `playerId`,
@@ -119,13 +119,13 @@ link_team_meta <- function(x, teams) {
 #' @param player_season Player-season backbone.
 #' @param picks Cleaned picks from [clean_picks()].
 #' @param draft_window Integer vector of plausible draft years for players in
-#'   the backbone; picks outside it are ignored. Defaults to `2010:2026` (the
-#'   2010-2025 stats window plus the following spring's draft).
+#'   the backbone; picks outside it are ignored. Defaults to `2010:2027` (the
+#'   2010-2026 stats window plus the following spring's draft).
 #'
 #' @return `player_season` with `drafted`, `draft_year`, `draft_round`,
 #'   `draft_overall`. Same row count as `player_season`.
 #' @export
-link_drafted <- function(player_season, picks, draft_window = 2010:2026) {
+link_drafted <- function(player_season, picks, draft_window = 2010:2027) {
   draft_lookup <- picks |>
     dplyr::filter(
       !is.na(.data$playerId),

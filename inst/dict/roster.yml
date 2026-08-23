@@ -1,5 +1,5 @@
 dataset: roster
-source: CFBD /roster (per year, 2010–2025)
+source: CFBD /roster (per year, 2010–2026)
 grain: one player-season on a team roster
 key: playerId (string, from id) + season
 description: >

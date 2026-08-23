@@ -6,6 +6,16 @@ layer, and the documentation site, all under version control.
 
 ## Pipeline & data
 
+- Extended the data window from 2010–2025 to **2010–2026**: `ingest_player_stats()`
+  and `ingest_roster()` now default to `2010:2026` (and `data-raw/refresh.R` pulls
+  through 2026), with the season contracts (`contract_player_stats()`,
+  `contract_conference_tiers()`) and dictionaries updated to match. Draft-facing
+  bounds moved to 2027 accordingly — `link_drafted()` now defaults to a
+  `2010:2027` draft window (the 2010–2026 stats window plus the following spring's
+  draft), and `contract_picks()`/`contract_drafted()` widen their year checks. The
+  2026 refresh adds preseason rosters and the completed 2026 draft class; 2026
+  season stats are not yet available (season not started).
+  See [decision 0012](https://github.com/ngiangre/cfbstats/blob/main/decisions/0012-extend-data-window-to-2026.md).
 - `targets` pipeline (`_targets.R`) as the single source of truth for the DAG,
   with stage functions in `R/` (`ingest`, `clean`, `link`, `features`, `model`).
   See [decision 0004](https://github.com/ngiangre/cfbstats/blob/main/decisions/0004-adopt-targets-orchestration.md).

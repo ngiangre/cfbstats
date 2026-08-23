@@ -27,7 +27,7 @@ enforce_contract <- function(agent, label, stop_on_fail) {
 contract_picks <- function(picks, stop_on_fail = TRUE) {
   rlang::check_installed("pointblank")
   # Raw picks carry the full NFL draft history (back to 1936), not just our
-  # 2010-2025 stats window; bound the year check accordingly.
+  # 2010-2026 stats window; bound the year check accordingly.
   agent <- pointblank::create_agent(picks, label = "picks") |>
     pointblank::col_exists(c("collegeAthleteId", "year", "round", "overall")) |>
     # Columns documented in inst/dict/picks.yml that clean_picks passes through.
@@ -47,7 +47,7 @@ contract_picks <- function(picks, stop_on_fail = TRUE) {
       "hometownInfo_longitude",
       "hometownInfo_countyFips"
     )) |>
-    pointblank::col_vals_between("year", 1936, 2026) |>
+    pointblank::col_vals_between("year", 1936, 2027) |>
     pointblank::col_vals_between("round", 1, 30, na_pass = TRUE) |>
     pointblank::interrogate()
   enforce_contract(agent, "picks", stop_on_fail)
@@ -72,7 +72,7 @@ contract_player_stats <- function(player_stats, stop_on_fail = TRUE) {
       "stat"
     )) |>
     pointblank::col_vals_not_null(pointblank::vars(playerId, season)) |>
-    pointblank::col_vals_between("season", 2010, 2025) |>
+    pointblank::col_vals_between("season", 2010, 2026) |>
     pointblank::interrogate()
   enforce_contract(agent, "player_stats", stop_on_fail)
 }
@@ -88,7 +88,7 @@ contract_coaches <- function(coaches, stop_on_fail = TRUE) {
   agent <- pointblank::create_agent(coaches, label = "coaches") |>
     pointblank::col_exists(c("coach_id", "school", "season", "srs", "wins")) |>
     pointblank::col_vals_not_null(pointblank::vars(coach_id, school, season)) |>
-    pointblank::col_vals_between("season", 1869, 2026) |>
+    pointblank::col_vals_between("season", 1869, 2027) |>
     pointblank::interrogate()
   enforce_contract(agent, "coaches", stop_on_fail)
 }
@@ -193,7 +193,7 @@ contract_drafted <- function(ps_draft, ps_pre, stop_on_fail = TRUE) {
     pointblank::col_vals_between(
       "draft_year",
       2010,
-      2026,
+      2027,
       na_pass = TRUE
     ) |>
     pointblank::interrogate()

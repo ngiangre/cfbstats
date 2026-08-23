@@ -1,5 +1,5 @@
 dataset: player_stats
-source: CFBD /stats/player/season (per year, 2010–2025)
+source: CFBD /stats/player/season (per year, 2010–2026)
 grain: LONG — one row per player-season-category-statType-stat
 key: playerId (string) + season
 description: >

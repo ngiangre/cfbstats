@@ -60,11 +60,11 @@ ingest_picks <- function() {
 #' Pulls `/stats/player/season` per year. Returns **long** data: one row per
 #' player-season-category-statType-stat (decision 0003 / VISION §4).
 #'
-#' @param years Integer vector of seasons (default 2010:2025).
+#' @param years Integer vector of seasons (default 2010:2026).
 #'
 #' @return A long tibble of player-season stats across `years`.
 #' @export
-ingest_player_stats <- function(years = 2010:2025) {
+ingest_player_stats <- function(years = 2010:2026) {
   rlang::check_installed("purrr")
   purrr::map(
     as.integer(years),
@@ -138,12 +138,12 @@ ingest_teams <- function() {
 #' field is the player's **eligibility class** (1-5), not the season, so it is
 #' renamed to `class_year` and never used as the season key.
 #'
-#' @param years Integer vector of seasons (default 2010:2025).
+#' @param years Integer vector of seasons (default 2010:2026).
 #'
 #' @return A tibble, one row per player-season on a roster, with an authoritative
 #'   `season` column.
 #' @export
-ingest_roster <- function(years = 2010:2025) {
+ingest_roster <- function(years = 2010:2026) {
   rlang::check_installed(c("purrr", "dplyr"))
   purrr::map(
     as.integer(years),

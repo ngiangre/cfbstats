@@ -3,7 +3,7 @@
 # Tier is an ordinal competitive level used to measure transfer *direction*:
 #   3 = Power, 2 = Group of 5 / other FBS, 1 = FCS and below. Higher = stronger.
 #
-# The lookup is season-aware: conference names/memberships shift over 2010-2025
+# The lookup is season-aware: conference names/memberships shift over 2010-2026
 # (Pac-12 collapse, Big East -> AAC, WAC dropping FBS football). We build from
 # the (season, conference) pairs actually present in player_stats so any new
 # conference in a data refresh defaults to tier 1 rather than silently dropping.

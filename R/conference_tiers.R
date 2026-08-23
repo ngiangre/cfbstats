@@ -53,7 +53,7 @@ contract_conference_tiers <- function(
     ) |>
     pointblank::col_vals_in_set("tier", unname(tier_levels)) |>
     pointblank::col_vals_in_set("tier_label", names(tier_levels)) |>
-    pointblank::col_vals_between("season", 2010, 2025) |>
+    pointblank::col_vals_between("season", 2010, 2026) |>
     pointblank::rows_distinct(pointblank::vars(season, conference)) |>
     pointblank::interrogate()
 
