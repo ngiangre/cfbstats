@@ -30,6 +30,34 @@ test_that("link_drafted resolves a colliding id to the in-window pick", {
   expect_true(out$drafted)
 })
 
+test_that("link_drafted does not attribute a pre-window collision pick", {
+  # An id whose only pick is historical (id reuse across eras) must not be
+  # marked drafted for a modern player-season (decision 0011).
+  ps <- tibble::tibble(playerId = "1", season = 2021L, team = "Georgia")
+  picks <- tibble::tibble(
+    playerId = "1",
+    year = 1973L,
+    round = 1L,
+    overall = 5L
+  )
+  out <- link_drafted(ps, picks)
+  expect_false(out$drafted)
+  expect_true(is.na(out$draft_year))
+})
+
+test_that("link_drafted accepts a following-spring (2026) draft", {
+  ps <- tibble::tibble(playerId = "1", season = 2025L, team = "Georgia")
+  picks <- tibble::tibble(
+    playerId = "1",
+    year = 2026L,
+    round = 2L,
+    overall = 40L
+  )
+  out <- link_drafted(ps, picks)
+  expect_true(out$drafted)
+  expect_equal(out$draft_year, 2026L)
+})
+
 test_that("link_drafted marks undrafted player-seasons and completes drafted", {
   ps <- tibble::tibble(
     playerId = c("1", "3"),

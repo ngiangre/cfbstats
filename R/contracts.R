@@ -167,15 +167,16 @@ contract_teams <- function(teams, player_season, stop_on_fail = TRUE) {
 #'
 #' @param ps_draft Player-seasons with the draft outcome attached (see
 #'   [link_drafted()]).
-#' @param player_season The pre-join backbone (see [build_player_season()]); its
-#'   row count is the count `ps_draft` must preserve.
+#' @param ps_pre The immediate pre-join input to [link_drafted()] (in the
+#'   pipeline, `ps_tier` — already carrying the intentional `link_coaches`
+#'   many-to-many inflation); its row count is what `ps_draft` must preserve.
 #' @param stop_on_fail Abort on failure (default `TRUE`)?
 #' @return The interrogated pointblank agent, invisibly.
 #' @export
-contract_drafted <- function(ps_draft, player_season, stop_on_fail = TRUE) {
+contract_drafted <- function(ps_draft, ps_pre, stop_on_fail = TRUE) {
   rlang::check_installed("pointblank")
   ps_draft <- dplyr::collect(ps_draft)
-  n_expected <- nrow(dplyr::collect(player_season))
+  n_expected <- nrow(dplyr::collect(ps_pre))
   agent <- pointblank::create_agent(ps_draft, label = "drafted") |>
     pointblank::col_exists(c(
       "drafted",
@@ -192,7 +193,7 @@ contract_drafted <- function(ps_draft, player_season, stop_on_fail = TRUE) {
     pointblank::col_vals_between(
       "draft_year",
       2010,
-      2025,
+      2026,
       na_pass = TRUE
     ) |>
     pointblank::interrogate()

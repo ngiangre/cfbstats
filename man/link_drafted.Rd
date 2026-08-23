@@ -4,12 +4,16 @@
 \alias{link_drafted}
 \title{Attach the draft outcome}
 \usage{
-link_drafted(player_season, picks)
+link_drafted(player_season, picks, draft_window = 2010:2026)
 }
 \arguments{
 \item{player_season}{Player-season backbone.}
 
 \item{picks}{Cleaned picks from \code{\link[=clean_picks]{clean_picks()}}.}
+
+\item{draft_window}{Integer vector of plausible draft years for players in
+the backbone; picks outside it are ignored. Defaults to \code{2010:2026} (the
+2010-2025 stats window plus the following spring's draft).}
 }
 \value{
 \code{player_season} with \code{drafted}, \code{draft_year}, \code{draft_round},
@@ -23,10 +27,13 @@ so, the draft year/round/overall. Joins on the shared string \code{playerId}
 }
 \details{
 \code{picks} carries the full NFL draft history (back to 1936) and CFBD reuses
-\code{collegeAthleteId} across eras, so a handful of ids map to two picks decades
-apart. Left unchecked that fans out the join and silently duplicates a
-player-season (decision 0011). The lookup is therefore collapsed to \strong{one
-pick per \code{playerId}}, preferring a pick inside the 2010-2025 stats window
-and then the most recent, so this join is strictly 1:1 on \code{playerId} and adds
-no rows.
+\code{collegeAthleteId} across eras, so a modern player's id can match a pick from
+decades earlier. Left unchecked that fans out the join (duplicating a
+player-season) and falsely attributes an ancient draft to a current player
+(decision 0011). Since a 2010-2025 college career can only lead to a
+2010-2026 draft, picks outside \code{draft_window} are dropped before the join —
+this removes the pre-window collision artifacts entirely. The lookup is then
+collapsed to \strong{one pick per \code{playerId}} (most recent, a guard against any
+future intra-window collision), so the join is strictly 1:1 on \code{playerId},
+adds no rows, and marks \code{drafted} only for a plausible in-window pick.
 }

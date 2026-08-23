@@ -33,13 +33,16 @@ layer, and the documentation site, all under version control.
   data-quality issue the fallback had hidden: `clean_roster()` now coerces a
   placeholder `weight` of `0` to `NA`, and the contract weight range is 100–500 lb.
   See [decision 0009](https://github.com/ngiangre/cfbstats/blob/main/decisions/0009-finalize-roster-drop-weight-delta.md).
-- Fixed a silent fan-out in the draft-outcome join: `picks` carries the full NFL
-  draft history (back to 1936) and CFBD reuses `collegeAthleteId` across eras, so
-  a few ids matched two picks and duplicated a player-season. `link_drafted()`
-  now collapses the outcome to one pick per `playerId` (preferring the pick
-  inside the 2010–2025 stats window), making the join 1:1; the new
-  `contract_drafted()` (`ok_drafted`, fed into the `link_drafted` audit record)
-  and `tests/testthat/test-link.R` guard against regressions.
+- Fixed a silent fan-out and false-positive draft attribution in the
+  draft-outcome join: `picks` carries the full NFL draft history (back to 1936)
+  and CFBD reuses `collegeAthleteId` across eras, so a modern player's id could
+  match an ancient pick — duplicating a player-season and marking it `drafted`
+  off a pre-window draft. `link_drafted()` now ignores picks outside the
+  plausible draft window (`draft_window`, default `2010:2026`) and collapses the
+  outcome to one pick per `playerId`, making the join strictly 1:1 and only ever
+  marking `drafted` for an in-window pick. The new `contract_drafted()`
+  (`ok_drafted`, fed into the `link_drafted` audit record) and
+  `tests/testthat/test-link.R` guard against regressions.
   See [decision 0011](https://github.com/ngiangre/cfbstats/blob/main/decisions/0011-draft-outcome-one-pick-per-player.md).
 - Team logos & colors: a `teams` display dimension sourced from CFBD `/teams`
   (`ingest_teams()`/`clean_teams()`, `data/teams.parquet`), joined by school name

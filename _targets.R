@@ -83,7 +83,7 @@ list(
   tar_target(
     ok_drafted,
     pointblank::all_passed(
-      contract_drafted(ps_draft, player_season, stop_on_fail = FALSE)
+      contract_drafted(ps_draft, ps_tier, stop_on_fail = FALSE)
     )
   ),
 

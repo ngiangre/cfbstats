@@ -4,14 +4,15 @@
 \alias{contract_drafted}
 \title{Data contract for the draft-outcome join}
 \usage{
-contract_drafted(ps_draft, player_season, stop_on_fail = TRUE)
+contract_drafted(ps_draft, ps_pre, stop_on_fail = TRUE)
 }
 \arguments{
 \item{ps_draft}{Player-seasons with the draft outcome attached (see
 \code{\link[=link_drafted]{link_drafted()}}).}
 
-\item{player_season}{The pre-join backbone (see \code{\link[=build_player_season]{build_player_season()}}); its
-row count is the count \code{ps_draft} must preserve.}
+\item{ps_pre}{The immediate pre-join input to \code{\link[=link_drafted]{link_drafted()}} (in the
+pipeline, \code{ps_tier} — already carrying the intentional \code{link_coaches}
+many-to-many inflation); its row count is what \code{ps_draft} must preserve.}
 
 \item{stop_on_fail}{Abort on failure (default \code{TRUE})?}
 }

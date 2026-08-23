@@ -106,35 +106,40 @@ link_team_meta <- function(x, teams) {
 #' (draft-eligible seasons only; out-of-time framing).
 #'
 #' `picks` carries the full NFL draft history (back to 1936) and CFBD reuses
-#' `collegeAthleteId` across eras, so a handful of ids map to two picks decades
-#' apart. Left unchecked that fans out the join and silently duplicates a
-#' player-season (decision 0011). The lookup is therefore collapsed to **one
-#' pick per `playerId`**, preferring a pick inside the 2010-2025 stats window
-#' and then the most recent, so this join is strictly 1:1 on `playerId` and adds
-#' no rows.
+#' `collegeAthleteId` across eras, so a modern player's id can match a pick from
+#' decades earlier. Left unchecked that fans out the join (duplicating a
+#' player-season) and falsely attributes an ancient draft to a current player
+#' (decision 0011). Since a 2010-2025 college career can only lead to a
+#' 2010-2026 draft, picks outside `draft_window` are dropped before the join —
+#' this removes the pre-window collision artifacts entirely. The lookup is then
+#' collapsed to **one pick per `playerId`** (most recent, a guard against any
+#' future intra-window collision), so the join is strictly 1:1 on `playerId`,
+#' adds no rows, and marks `drafted` only for a plausible in-window pick.
 #'
 #' @param player_season Player-season backbone.
 #' @param picks Cleaned picks from [clean_picks()].
+#' @param draft_window Integer vector of plausible draft years for players in
+#'   the backbone; picks outside it are ignored. Defaults to `2010:2026` (the
+#'   2010-2025 stats window plus the following spring's draft).
 #'
 #' @return `player_season` with `drafted`, `draft_year`, `draft_round`,
 #'   `draft_overall`. Same row count as `player_season`.
 #' @export
-link_drafted <- function(player_season, picks) {
+link_drafted <- function(player_season, picks, draft_window = 2010:2026) {
   draft_lookup <- picks |>
-    dplyr::filter(!is.na(.data$playerId)) |>
+    dplyr::filter(
+      !is.na(.data$playerId),
+      .data$year %in% draft_window
+    ) |>
     dplyr::transmute(
       .data$playerId,
       draft_year = .data$year,
       draft_round = .data$round,
       draft_overall = .data$overall
     ) |>
-    # Collapse historical id collisions to one pick per player, preferring the
-    # pick inside the stats window, then the most recent (decision 0011).
-    dplyr::arrange(
-      .data$playerId,
-      dplyr::desc(.data$draft_year %in% 2010:2025),
-      dplyr::desc(.data$draft_year)
-    ) |>
+    # Guard against any future intra-window id collision: keep the most recent
+    # pick so the lookup is one row per player (decision 0011).
+    dplyr::arrange(.data$playerId, dplyr::desc(.data$draft_year)) |>
     dplyr::distinct(.data$playerId, .keep_all = TRUE)
   player_season |>
     dplyr::left_join(draft_lookup, by = "playerId") |>

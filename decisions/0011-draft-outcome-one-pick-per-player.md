@@ -28,19 +28,33 @@ row delta), but this is a silent, data-dependent corruption of the outcome that
 would grow and shift on every refresh (AGENTS.md "watch for silent row loss on
 joins"; architecture-improver principle 2).
 
+A first fix (collapse to one pick per id, *preferring* the in-window pick) fixed
+the fan-out but left a second defect the audit contract then caught: for an id
+whose **only** matched pick is historical, the preference still kept that
+pre-window pick and marked the modern player-season `drafted = TRUE` (~51 rows
+attributed to 1973–2002 drafts). A 2010–2025 college career cannot lead to a
+pre-2010 draft, so those are pure id-collision false positives.
+
 ## Decision
 
-Collapse the draft-outcome lookup to **one pick per `playerId`** before the
-join, so `link_drafted()` is strictly 1:1 on `playerId` and adds no rows. When
-an id maps to more than one pick we keep the pick **inside the 2010–2025 stats
-window**, then the **most recent** — the pick that actually corresponds to the
-player in our backbone.
+**Restrict the draft-outcome lookup to the plausible draft window** for the
+backbone (`draft_window = 2010:2026` — the 2010–2025 stats window plus the
+following spring's draft) *before* de-duplicating, then collapse to **one pick
+per `playerId`** (most recent, a guard against any future intra-window
+collision). Dropping out-of-window picks removes the pre-2010 collision
+artifacts entirely (a historical-only id simply goes `drafted = FALSE`, which is
+correct), and — verified against the data — there are **zero** ids with more
+than one pick inside 2010–2026, so the outcome is unambiguous. The result is a
+join that is strictly 1:1 on `playerId`, adds no rows, and only ever marks
+`drafted` for a plausible in-window pick.
 
 Alternatives not chosen: (a) leaving the fan-out and de-duplicating downstream —
 rejected, it lets a corrupt outcome propagate and defeats the audit guarantee;
-(b) name-based disambiguation of colliding ids — deferred as a possible future
-QA cross-check (decision 0003 already plans to retire name matching to QA), not
-needed for the volume seen.
+(b) merely *preferring* the in-window pick without dropping out-of-window ones —
+rejected, it still falsely attributes ancient drafts to modern players when the
+only match is historical; (c) name-based disambiguation of colliding ids —
+deferred as a possible future QA cross-check (decision 0003 already plans to
+retire name matching to QA), not needed for the volume seen.
 
 The join is now guarded by `contract_drafted()` (asserts no row inflation,
 `drafted` a complete logical, `draft_year` in-window), wired into `_targets.R`
@@ -57,10 +71,11 @@ colliding-id-resolution behavior.
 
 ## Consequences
 
-- For a colliding id, the historical (pre-2010) pick is dropped from the
-  outcome; this is intended, since those picks are not the player in our
+- Picks outside `draft_window` (default `2010:2026`) are never attributed to a
+  player-season; this is intended, since those picks cannot be the player in our
   window. If a future analysis needs full draft history it must go back to
-  `picks` directly, not through the player-season outcome.
+  `picks` directly, not through the player-season outcome. If the stats window
+  is extended, `draft_window` must be widened to match.
 - No schema change — columns are unchanged, so the dictionaries and the
   dict–schema parity test (decision 0010) are unaffected.
 
