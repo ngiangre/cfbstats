@@ -11,6 +11,7 @@ dir.create("data", showWarnings = FALSE)
 arrow::write_parquet(ingest_picks(), "data/picks.parquet")
 arrow::write_parquet(ingest_player_stats(years), "data/player_stats.parquet")
 arrow::write_parquet(ingest_coaches(), "data/coaches.parquet")
+arrow::write_parquet(ingest_teams(), "data/teams.parquet")
 arrow::write_parquet(ingest_roster(years), "data/roster.parquet")
 
 cli::cli_alert_success(

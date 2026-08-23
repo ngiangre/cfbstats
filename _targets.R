@@ -45,10 +45,12 @@ list(
   tar_target(picks_file, "data/picks.parquet", format = "file"),
   tar_target(player_stats_file, "data/player_stats.parquet", format = "file"),
   tar_target(coaches_file, "data/coaches.parquet", format = "file"),
+  tar_target(teams_file, "data/teams.parquet", format = "file"),
   tar_target(tiers_file, "data/conference_tiers.parquet", format = "file"),
   tar_target(raw_picks, arrow::read_parquet(picks_file)),
   tar_target(raw_player_stats, arrow::read_parquet(player_stats_file)),
   tar_target(raw_coaches, arrow::read_parquet(coaches_file)),
+  tar_target(raw_teams, arrow::read_parquet(teams_file)),
   tar_target(tiers, arrow::read_parquet(tiers_file)),
   tar_target(raw_roster, read_roster_if_present()),
 
@@ -56,6 +58,7 @@ list(
   tar_target(picks, clean_picks(raw_picks)),
   tar_target(player_stats, clean_player_stats(raw_player_stats)),
   tar_target(coaches, clean_coaches(raw_coaches)),
+  tar_target(teams, clean_teams(raw_teams)),
   tar_target(roster, clean_roster(raw_roster)),
 
   # ---- contracts (decision 0005): pass/fail feeds the audit log -------------
@@ -81,6 +84,12 @@ list(
     ok_roster,
     pointblank::all_passed(
       contract_roster(roster, stop_on_fail = FALSE)
+    )
+  ),
+  tar_target(
+    ok_teams,
+    pointblank::all_passed(
+      contract_teams(teams, player_season, stop_on_fail = FALSE)$coverage
     )
   ),
   tar_target(
@@ -142,6 +151,14 @@ list(
         raw_roster,
         keys = c("playerId", "season"),
         contract_passed = ok_roster
+      ),
+      audit_step(
+        teams,
+        "clean_teams",
+        "clean",
+        raw_teams,
+        keys = "team",
+        contract_passed = ok_teams
       ),
       audit_step(
         player_season,

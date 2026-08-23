@@ -32,6 +32,28 @@ test_that("clean_coaches builds a tidy head-coach-season schema", {
   expect_true(all(c("srs", "sp_offense", "sp_defense") %in% names(out)))
 })
 
+test_that("clean_teams dedupes duplicate school names, keeping the real program", {
+  # A duplicated school name: the real program (has classification + logo) plus
+  # a phantom row (NA classification, no logo). Dedupe must keep the real one.
+  raw <- tibble::tibble(
+    id = c(3237L, 2653L),
+    school = c("Troy", "Troy"),
+    mascot = c(NA, "Trojans"),
+    abbreviation = c(NA, "TROY"),
+    conference = c(NA, "Sun Belt"),
+    classification = c(NA, "fbs"),
+    color = c(NA, "#8A2432"),
+    alternateColor = c(NA, "#FFFFFF"),
+    logo_light = c(NA, "https://cdn/logos/500/2653.png"),
+    logo_dark = c(NA, "https://cdn/logos-dark/500/2653.png")
+  )
+  out <- clean_teams(raw)
+  expect_equal(nrow(out), 1L)
+  expect_equal(out$team, "Troy")
+  expect_equal(out$classification, "fbs")
+  expect_false(is.na(out$logo_light))
+})
+
 test_that("clean_roster keys on a string playerId", {
   # Post-ingest roster: season is stamped from the query year; the endpoint's
   # own `year` (eligibility class) has been renamed to class_year.

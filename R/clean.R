@@ -69,6 +69,44 @@ clean_coaches <- function(coaches) {
     )
 }
 
+#' Clean team metadata
+#'
+#' Standardizes the `/teams` dimension for a **name join** on `team` (= CFBD
+#' `school`), which is the same namespace as `player_stats.team` and the coach
+#' join (decision 0008). The key cleaning step is **deduping to one row per
+#' school**: `/teams` contains duplicate school names (a real program plus a
+#' phantom row with `NA` classification and no logos); a naive join would fan
+#' out. We keep the row with a real `classification`, then the one that has a
+#' logo, dropping the phantom. Logo URLs were flattened at ingest; a handful of
+#' small programs carry no logo and are left `NA` (placeholder at display time).
+#'
+#' @param teams Raw teams tibble from [ingest_teams()] (already flat).
+#'
+#' @return A cleaned tibble, one row per `team`, with colors and logo URLs.
+#' @export
+clean_teams <- function(teams) {
+  teams |>
+    # Prefer the real program (non-NA classification), then the row with a logo.
+    dplyr::arrange(
+      .data$school,
+      is.na(.data$classification),
+      is.na(.data$logo_light)
+    ) |>
+    dplyr::distinct(.data$school, .keep_all = TRUE) |>
+    dplyr::transmute(
+      team = .data$school,
+      team_id = .data$id,
+      mascot = .data$mascot,
+      abbreviation = .data$abbreviation,
+      conference = .data$conference,
+      classification = .data$classification,
+      color = .data$color,
+      alt_color = .data$alternateColor,
+      logo_light = .data$logo_light,
+      logo_dark = .data$logo_dark
+    )
+}
+
 #' Clean rosters
 #'
 #' Standardizes roster physicals to the athlete-id key. Column names may vary by

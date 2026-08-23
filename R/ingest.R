@@ -86,6 +86,47 @@ ingest_coaches <- function() {
     tidyr::unnest(cols = "seasons", names_sep = "_")
 }
 
+#' Ingest team metadata (logos, colors, conference)
+#'
+#' Pulls `/teams` — the team **dimension** table, one row per program with
+#' display metadata (colors, mascot, abbreviation, conference). The raw `logos`
+#' block is a list of the same image at several resolutions in light and `-dark`
+#' variants; like the other ingest functions (which unnest `hometownInfo` /
+#' `seasons`), this flattens it here into `logo_light` / `logo_dark` so the
+#' persisted parquet stays flat. Deduping duplicate school names is a cleaning
+#' concern, handled in [clean_teams()].
+#'
+#' @return A flat tibble, one row per team row returned by `/teams` (school names
+#'   may still repeat until [clean_teams()] dedupes them).
+#' @export
+ingest_teams <- function() {
+  rlang::check_installed("purrr")
+  first_match <- function(x, pattern) {
+    if (length(x)) x[grep(pattern, x)][1] else NA_character_
+  }
+  cfbd_get("/teams") |>
+    dplyr::transmute(
+      id = .data$id,
+      school = .data$school,
+      mascot = .data$mascot,
+      abbreviation = .data$abbreviation,
+      conference = .data$conference,
+      classification = .data$classification,
+      color = .data$color,
+      alternateColor = .data$alternateColor,
+      logo_light = purrr::map_chr(
+        .data$logos,
+        first_match,
+        pattern = "/logos/"
+      ),
+      logo_dark = purrr::map_chr(
+        .data$logos,
+        first_match,
+        pattern = "/logos-dark/"
+      )
+    )
+}
+
 #' Ingest team rosters for one or more years
 #'
 #' Pulls `/roster` per year for per-season physicals (height, **weight**),

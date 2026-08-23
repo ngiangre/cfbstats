@@ -18,10 +18,20 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
 | `data/picks.parquet` | one drafted player | `collegeAthleteId` (int); position, height, weight, pre-draft ranking, hometown |
 | `data/player_stats.parquet` | **long**: player-season-stat | `playerId` (string); pivot `category`/`statType`/`stat` |
 | `data/coaches.parquet` | one head-coach-season | head coaches only |
+| `data/teams.parquet` | one team (program) | join by school **name** (`team`); logos/colors, DISPLAY only (decision 0008) |
 | `data/conference_tiers.parquet` | season × conference | tier 3 Power / 2 G5 / 1 FCS-and-below (decision 0003) |
 
 ### Gotchas (do not ignore)
 
+- **`data/` is gitignored — NO parquet is tracked in git.** Do **not** `git add`
+  or commit `data/*.parquet` (a `git status` won't even show it). The raw tables
+  ship as assets on the **`data-latest` GitHub release**: `data-raw/refresh.R`
+  writes `data/*.parquet` locally, `piggyback::pb_upload(..., tag="data-latest")`
+  publishes them (the `data-refresh.yaml` job), and `site.yaml` does
+  `piggyback::pb_download(tag="data-latest")` on a fresh checkout. Adding a new
+  table means: add its `ingest_*()` to `data-raw/refresh.R`, then run the refresh
+  (or `pb_upload` the single file) to publish it **before** merging — otherwise a
+  fresh CI/site build can't find it and the `*_file` target errors.
 - **Player key = athlete id.** `player_stats.playerId`, `roster.id`, and
   `picks.collegeAthleteId` (coerce int→string) are one namespace — join on it,
   not name. ~98–100% of picks from draft year 2013 on carry an id (decision 0003).

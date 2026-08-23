@@ -53,6 +53,24 @@ viz_scatter_2d(
 viz_scatter_3d(picks, x = "height", y = "weight", z = "overall", color = "round")
 ```
 
+## Branding — team logos
+
+The `teams` dimension carries each program's logo and colors, joined by school
+name via `link_team_meta()` and kept off the model path (display only, decision
+0008). Two rendering paths: a `reactable` table with logo thumbnails and color
+swatches, and a `ggiraph` bar filled with each team's brand color that shows its
+logo on hover.
+
+```{r}
+#| label: tbl-team-logos
+viz_team_logos(tar_read(teams))
+```
+
+```{r}
+#| label: fig-drafts-by-team
+viz_drafts_by_team(tar_read(model_table), tar_read(teams))
+```
+
 ::: {.callout-tip}
 These are templates, not findings — they demonstrate the wiring from a pipeline
 target to an interactive widget. Real analyses will pair model inputs with model

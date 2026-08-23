@@ -18,6 +18,11 @@ layer, and the documentation site, all under version control.
   See [decision 0003](https://github.com/ngiangre/cfbstats/blob/main/decisions/0003-expand-v1-scope-weight-coaching-transfers.md).
 - The `data-refresh` workflow now creates the `data-latest` release on first run
   (before uploading), so bootstrapping the data asset no longer needs a manual step.
+- Team logos & colors: a `teams` display dimension sourced from CFBD `/teams`
+  (`ingest_teams()`/`clean_teams()`, `data/teams.parquet`), joined by school name
+  via `link_team_meta()` at the report layer only (kept off the model path).
+  `contract_teams()` enforces full team-name coverage of the player-season
+  backbone. See [decision 0008](https://github.com/ngiangre/cfbstats/blob/main/decisions/0008-team-logos-dimension.md).
 
 ## Documentation site
 

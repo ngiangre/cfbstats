@@ -18,6 +18,34 @@ test_that("contract_conference_tiers passes a well-formed lookup and its coverag
   expect_true(pointblank::all_passed(agents$coverage))
 })
 
+test_that("contract_teams passes when every player_season team resolves", {
+  skip_if_not_installed("pointblank")
+  teams <- tibble::tibble(
+    team = c("Alabama", "Troy"),
+    logo_light = c("a.png", NA_character_),
+    logo_dark = c("a-dark.png", NA_character_),
+    conference = c("SEC", "Sun Belt")
+  )
+  ps <- tibble::tibble(team = c("Alabama", "Troy"))
+  agents <- contract_teams(teams, ps, stop_on_fail = FALSE)
+  expect_true(pointblank::all_passed(agents$dim))
+  # A missing logo (Troy) is allowed; only coverage (row presence) is enforced.
+  expect_true(pointblank::all_passed(agents$coverage))
+})
+
+test_that("contract_teams flags a team with no dimension row", {
+  skip_if_not_installed("pointblank")
+  teams <- tibble::tibble(
+    team = "Alabama",
+    logo_light = "a.png",
+    logo_dark = "a-dark.png",
+    conference = "SEC"
+  )
+  ps <- tibble::tibble(team = c("Alabama", "Nonexistent State"))
+  agents <- contract_teams(teams, ps, stop_on_fail = FALSE)
+  expect_false(pointblank::all_passed(agents$coverage))
+})
+
 test_that("contract_conference_tiers flags an unmapped conference", {
   skip_if_not_installed("pointblank")
   tiers <- tibble::tibble(

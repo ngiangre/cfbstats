@@ -17,5 +17,6 @@ utils::globalVariables(c(
   "playerId",
   "coach_id",
   "school",
-  "weight"
+  "weight",
+  "team"
 ))

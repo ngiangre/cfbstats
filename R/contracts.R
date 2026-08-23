@@ -76,6 +76,71 @@ contract_coaches <- function(coaches, stop_on_fail = TRUE) {
   enforce_contract(agent, "coaches", stop_on_fail)
 }
 
+#' Data contract for the team dimension
+#'
+#' Validates the cleaned team dimension and, crucially, its *coverage*: every
+#' `team` present in the player-season backbone must resolve to a row so a
+#' logo/color join never silently drops a program. Logo *presence* is not a hard
+#' check — a few small programs legitimately carry no logo URL (a placeholder is
+#' used at display time), so that is left to a softer signal.
+#'
+#' @param teams Cleaned team dimension (see [clean_teams()]).
+#' @param player_season Player-season backbone (see [build_player_season()]); the
+#'   coverage universe the dimension must fully cover.
+#' @param stop_on_fail If `TRUE` (default), raise an error when any check fails.
+#'
+#' @return Invisibly, a list of the two interrogated `pointblank` agents
+#'   (`dim`, `coverage`).
+#' @export
+contract_teams <- function(teams, player_season, stop_on_fail = TRUE) {
+  rlang::check_installed("pointblank")
+  teams <- dplyr::collect(teams)
+  player_season <- dplyr::collect(player_season)
+
+  agent_dim <-
+    pointblank::create_agent(teams, label = "teams: dimension") |>
+    pointblank::col_exists(c(
+      "team",
+      "logo_light",
+      "logo_dark",
+      "conference"
+    )) |>
+    pointblank::col_vals_not_null(pointblank::vars(team)) |>
+    pointblank::rows_distinct(pointblank::vars(team)) |>
+    pointblank::interrogate()
+
+  # Referential coverage: every player_season team has a dimension row.
+  coverage <- player_season |>
+    dplyr::distinct(.data$team) |>
+    dplyr::filter(!is.na(.data$team)) |>
+    dplyr::left_join(
+      dplyr::transmute(teams, team = .data$team, has_row = TRUE),
+      by = "team"
+    ) |>
+    dplyr::mutate(has_row = !is.na(.data$has_row))
+
+  agent_coverage <-
+    pointblank::create_agent(coverage, label = "teams: coverage") |>
+    pointblank::col_vals_equal("has_row", TRUE) |>
+    pointblank::interrogate()
+
+  if (stop_on_fail) {
+    if (!pointblank::all_passed(agent_dim)) {
+      cli::cli_abort("The {.file teams} dimension failed its data contract.")
+    }
+    if (!pointblank::all_passed(agent_coverage)) {
+      missing <- dplyr::filter(coverage, !.data$has_row)
+      cli::cli_abort(c(
+        "The {.file teams} dimension does not cover all of {.var player_season}.",
+        "x" = "{nrow(missing)} team{?s} unmapped.",
+        "i" = "e.g. {.val {utils::head(missing$team, 3)}}"
+      ))
+    }
+  }
+
+  invisible(list(dim = agent_dim, coverage = agent_coverage))
+}
+
 #' Data contract for cleaned rosters
 #'
 #' @param roster Cleaned roster (see [clean_roster()]).

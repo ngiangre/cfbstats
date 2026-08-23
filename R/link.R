@@ -67,6 +67,37 @@ link_tiers <- function(player_season, tiers) {
     )
 }
 
+#' Attach team display metadata (logos, colors)
+#'
+#' Left-joins the team dimension ([clean_teams()]) onto any table carrying a
+#' `team` column, on the shared school-name key. This is a **display** helper for
+#' the site/report (logos, colors), deliberately kept off the model path so logo
+#' URLs never leak into features. Coverage is guaranteed by [contract_teams()];
+#' a few small programs carry `NA` logo URLs (use a placeholder when rendering).
+#'
+#' @param x A table with a `team` column (e.g. the player-season backbone).
+#' @param teams Cleaned team dimension from [clean_teams()].
+#'
+#' @return `x` with `logo_light`, `logo_dark`, `color`, `alt_color`, and team
+#'   `mascot`/`abbreviation` attached.
+#' @export
+link_team_meta <- function(x, teams) {
+  x |>
+    dplyr::left_join(
+      dplyr::select(
+        teams,
+        "team",
+        "mascot",
+        "abbreviation",
+        "color",
+        "alt_color",
+        "logo_light",
+        "logo_dark"
+      ),
+      by = "team"
+    )
+}
+
 #' Attach the draft outcome
 #'
 #' Marks each player-season with whether that athlete was ever drafted and, if
