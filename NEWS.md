@@ -33,6 +33,14 @@ layer, and the documentation site, all under version control.
   data-quality issue the fallback had hidden: `clean_roster()` now coerces a
   placeholder `weight` of `0` to `NA`, and the contract weight range is 100–500 lb.
   See [decision 0009](https://github.com/ngiangre/cfbstats/blob/main/decisions/0009-finalize-roster-drop-weight-delta.md).
+- Fixed a silent fan-out in the draft-outcome join: `picks` carries the full NFL
+  draft history (back to 1936) and CFBD reuses `collegeAthleteId` across eras, so
+  a few ids matched two picks and duplicated a player-season. `link_drafted()`
+  now collapses the outcome to one pick per `playerId` (preferring the pick
+  inside the 2010–2025 stats window), making the join 1:1; the new
+  `contract_drafted()` (`ok_drafted`, fed into the `link_drafted` audit record)
+  and `tests/testthat/test-link.R` guard against regressions.
+  See [decision 0011](https://github.com/ngiangre/cfbstats/blob/main/decisions/0011-draft-outcome-one-pick-per-player.md).
 - Team logos & colors: a `teams` display dimension sourced from CFBD `/teams`
   (`ingest_teams()`/`clean_teams()`, `data/teams.parquet`), joined by school name
   via `link_team_meta()` at the report layer only (kept off the model path).
@@ -46,6 +54,13 @@ layer, and the documentation site, all under version control.
   See [decision 0006](https://github.com/ngiangre/cfbstats/blob/main/decisions/0006-quarto-site-architecture-and-viz.md).
 - Site renders reuse a committed Quarto freeze cache (`_quarto/_freeze/`) so CI
   is faster and deterministic.
+- Reworked the fan-facing Home (`README.md`) and About page for the
+  non-technical fan in [VISION.md](https://github.com/ngiangre/cfbstats/blob/main/VISION.md)
+  §10: added a "Where to start" fan path (About → Explore → Analysis) on the
+  README, translated the About page's scope and methodology into plain football
+  language, and tucked the statistical/tooling detail (the two cultures,
+  out-of-time validation, decision log, `testthat`/`pointblank`) into a
+  collapsible "For the stats-minded" callout so coders still have it.
 
 ## Project conventions
 

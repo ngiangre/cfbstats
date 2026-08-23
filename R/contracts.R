@@ -158,6 +158,47 @@ contract_teams <- function(teams, player_season, stop_on_fail = TRUE) {
   invisible(list(dim = agent_dim, coverage = agent_coverage))
 }
 
+#' Data contract for the draft-outcome join
+#'
+#' Guards the outcome-defining join in [link_drafted()]: it must be strictly
+#' 1:1 on `playerId` (no fan-out from historical id collisions, decision 0011),
+#' the `drafted` flag must be a complete logical, and any `draft_year` must fall
+#' inside the stats window.
+#'
+#' @param ps_draft Player-seasons with the draft outcome attached (see
+#'   [link_drafted()]).
+#' @param player_season The pre-join backbone (see [build_player_season()]); its
+#'   row count is the count `ps_draft` must preserve.
+#' @param stop_on_fail Abort on failure (default `TRUE`)?
+#' @return The interrogated pointblank agent, invisibly.
+#' @export
+contract_drafted <- function(ps_draft, player_season, stop_on_fail = TRUE) {
+  rlang::check_installed("pointblank")
+  ps_draft <- dplyr::collect(ps_draft)
+  n_expected <- nrow(dplyr::collect(player_season))
+  agent <- pointblank::create_agent(ps_draft, label = "drafted") |>
+    pointblank::col_exists(c(
+      "drafted",
+      "draft_year",
+      "draft_round",
+      "draft_overall"
+    )) |>
+    # No fan-out: the join preserves the backbone row count exactly.
+    pointblank::col_vals_equal("n", n_expected, preconditions = function(x) {
+      dplyr::mutate(x, n = nrow(x))
+    }) |>
+    pointblank::col_vals_not_null(pointblank::vars(drafted)) |>
+    pointblank::col_is_logical(pointblank::vars(drafted)) |>
+    pointblank::col_vals_between(
+      "draft_year",
+      2010,
+      2025,
+      na_pass = TRUE
+    ) |>
+    pointblank::interrogate()
+  enforce_contract(agent, "drafted", stop_on_fail)
+}
+
 #' Data contract for cleaned rosters
 #'
 #' @param roster Cleaned roster (see [clean_roster()]).

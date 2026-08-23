@@ -46,6 +46,33 @@ test_that("contract_teams flags a team with no dimension row", {
   expect_false(pointblank::all_passed(agents$coverage))
 })
 
+test_that("contract_drafted passes a clean 1:1 draft-outcome join", {
+  skip_if_not_installed("pointblank")
+  ps <- tibble::tibble(playerId = c("1", "2"), season = c(2021L, 2021L))
+  ps_draft <- link_drafted(
+    ps,
+    tibble::tibble(playerId = "1", year = 2022L, round = 3L, overall = 90L)
+  )
+  agent <- contract_drafted(ps_draft, ps, stop_on_fail = FALSE)
+  expect_true(pointblank::all_passed(agent))
+})
+
+test_that("contract_drafted flags a fanned-out draft-outcome join", {
+  skip_if_not_installed("pointblank")
+  ps <- tibble::tibble(playerId = "1", season = 2021L)
+  # Simulate the pre-fix fan-out: two outcome rows for one player-season.
+  fanned <- tibble::tibble(
+    playerId = c("1", "1"),
+    season = c(2021L, 2021L),
+    drafted = c(TRUE, TRUE),
+    draft_year = c(2018L, 2022L),
+    draft_round = c(1L, 3L),
+    draft_overall = c(5L, 90L)
+  )
+  agent <- contract_drafted(fanned, ps, stop_on_fail = FALSE)
+  expect_false(pointblank::all_passed(agent))
+})
+
 test_that("contract_conference_tiers flags an unmapped conference", {
   skip_if_not_installed("pointblank")
   tiers <- tibble::tibble(

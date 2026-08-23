@@ -13,11 +13,20 @@ link_drafted(player_season, picks)
 }
 \value{
 \code{player_season} with \code{drafted}, \code{draft_year}, \code{draft_round},
-\code{draft_overall}.
+\code{draft_overall}. Same row count as \code{player_season}.
 }
 \description{
 Marks each player-season with whether that athlete was ever drafted and, if
 so, the draft year/round/overall. Joins on the shared string \code{playerId}
 (decision 0003). Outcome definition is refined in the features/model stages
 (draft-eligible seasons only; out-of-time framing).
+}
+\details{
+\code{picks} carries the full NFL draft history (back to 1936) and CFBD reuses
+\code{collegeAthleteId} across eras, so a handful of ids map to two picks decades
+apart. Left unchecked that fans out the join and silently duplicates a
+player-season (decision 0011). The lookup is therefore collapsed to \strong{one
+pick per \code{playerId}}, preferring a pick inside the 2010-2025 stats window
+and then the most recent, so this join is strictly 1:1 on \code{playerId} and adds
+no rows.
 }
