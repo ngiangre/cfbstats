@@ -5,12 +5,12 @@ key: (season, conference)
 description: >
   Season-aware mapping of conference → competitive tier (Power / Group of 5 /
   FCS-and-below) used to measure transfer *direction* (decision 0003). Season-
-  keyed because memberships shift over 2010–2025 (Pac-12 collapse, Big East →
+  keyed because memberships shift over 2010–2026 (Pac-12 collapse, Big East →
   AAC, realignment). Coverage is enforced by contract_conference_tiers().
 columns:
   - name: season
     type: int32
-    description: Season year (2010–2025).
+    description: Season year (2010–2026).
     provenance: raw
   - name: conference
     type: string

@@ -27,7 +27,7 @@ enforce_contract <- function(agent, label, stop_on_fail) {
 contract_picks <- function(picks, stop_on_fail = TRUE) {
   rlang::check_installed("pointblank")
   # Raw picks carry the full NFL draft history (back to 1936), not just our
-  # 2010-2025 stats window; bound the year check accordingly.
+  # 2010-2026 stats window; bound the year check accordingly.
   agent <- pointblank::create_agent(picks, label = "picks") |>
     pointblank::col_exists(c("collegeAthleteId", "year", "round", "overall")) |>
     # Columns documented in inst/dict/picks.yml that clean_picks passes through.
@@ -47,7 +47,7 @@ contract_picks <- function(picks, stop_on_fail = TRUE) {
       "hometownInfo_longitude",
       "hometownInfo_countyFips"
     )) |>
-    pointblank::col_vals_between("year", 1936, 2026) |>
+    pointblank::col_vals_between("year", 1936, 2027) |>
     pointblank::col_vals_between("round", 1, 30, na_pass = TRUE) |>
     pointblank::interrogate()
   enforce_contract(agent, "picks", stop_on_fail)
@@ -72,7 +72,7 @@ contract_player_stats <- function(player_stats, stop_on_fail = TRUE) {
       "stat"
     )) |>
     pointblank::col_vals_not_null(pointblank::vars(playerId, season)) |>
-    pointblank::col_vals_between("season", 2010, 2025) |>
+    pointblank::col_vals_between("season", 2010, 2026) |>
     pointblank::interrogate()
   enforce_contract(agent, "player_stats", stop_on_fail)
 }
@@ -88,7 +88,7 @@ contract_coaches <- function(coaches, stop_on_fail = TRUE) {
   agent <- pointblank::create_agent(coaches, label = "coaches") |>
     pointblank::col_exists(c("coach_id", "school", "season", "srs", "wins")) |>
     pointblank::col_vals_not_null(pointblank::vars(coach_id, school, season)) |>
-    pointblank::col_vals_between("season", 1869, 2026) |>
+    pointblank::col_vals_between("season", 1869, 2027) |>
     pointblank::interrogate()
   enforce_contract(agent, "coaches", stop_on_fail)
 }
@@ -156,6 +156,48 @@ contract_teams <- function(teams, player_season, stop_on_fail = TRUE) {
   }
 
   invisible(list(dim = agent_dim, coverage = agent_coverage))
+}
+
+#' Data contract for the draft-outcome join
+#'
+#' Guards the outcome-defining join in [link_drafted()]: it must be strictly
+#' 1:1 on `playerId` (no fan-out from historical id collisions, decision 0011),
+#' the `drafted` flag must be a complete logical, and any `draft_year` must fall
+#' inside the stats window.
+#'
+#' @param ps_draft Player-seasons with the draft outcome attached (see
+#'   [link_drafted()]).
+#' @param ps_pre The immediate pre-join input to [link_drafted()] (in the
+#'   pipeline, `ps_tier` — already carrying the intentional `link_coaches`
+#'   many-to-many inflation); its row count is what `ps_draft` must preserve.
+#' @param stop_on_fail Abort on failure (default `TRUE`)?
+#' @return The interrogated pointblank agent, invisibly.
+#' @export
+contract_drafted <- function(ps_draft, ps_pre, stop_on_fail = TRUE) {
+  rlang::check_installed("pointblank")
+  ps_draft <- dplyr::collect(ps_draft)
+  n_expected <- nrow(dplyr::collect(ps_pre))
+  agent <- pointblank::create_agent(ps_draft, label = "drafted") |>
+    pointblank::col_exists(c(
+      "drafted",
+      "draft_year",
+      "draft_round",
+      "draft_overall"
+    )) |>
+    # No fan-out: the join preserves the backbone row count exactly.
+    pointblank::col_vals_equal("n", n_expected, preconditions = function(x) {
+      dplyr::mutate(x, n = nrow(x))
+    }) |>
+    pointblank::col_vals_not_null(pointblank::vars(drafted)) |>
+    pointblank::col_is_logical(pointblank::vars(drafted)) |>
+    pointblank::col_vals_between(
+      "draft_year",
+      2010,
+      2027,
+      na_pass = TRUE
+    ) |>
+    pointblank::interrogate()
+  enforce_contract(agent, "drafted", stop_on_fail)
 }
 
 #' Data contract for cleaned rosters

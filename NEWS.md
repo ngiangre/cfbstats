@@ -6,6 +6,16 @@ layer, and the documentation site, all under version control.
 
 ## Pipeline & data
 
+- Extended the data window from 2010–2025 to **2010–2026**: `ingest_player_stats()`
+  and `ingest_roster()` now default to `2010:2026` (and `data-raw/refresh.R` pulls
+  through 2026), with the season contracts (`contract_player_stats()`,
+  `contract_conference_tiers()`) and dictionaries updated to match. Draft-facing
+  bounds moved to 2027 accordingly — `link_drafted()` now defaults to a
+  `2010:2027` draft window (the 2010–2026 stats window plus the following spring's
+  draft), and `contract_picks()`/`contract_drafted()` widen their year checks. The
+  2026 refresh adds preseason rosters and the completed 2026 draft class; 2026
+  season stats are not yet available (season not started).
+  See [decision 0012](https://github.com/ngiangre/cfbstats/blob/main/decisions/0012-extend-data-window-to-2026.md).
 - `targets` pipeline (`_targets.R`) as the single source of truth for the DAG,
   with stage functions in `R/` (`ingest`, `clean`, `link`, `features`, `model`).
   See [decision 0004](https://github.com/ngiangre/cfbstats/blob/main/decisions/0004-adopt-targets-orchestration.md).
@@ -33,6 +43,17 @@ layer, and the documentation site, all under version control.
   data-quality issue the fallback had hidden: `clean_roster()` now coerces a
   placeholder `weight` of `0` to `NA`, and the contract weight range is 100–500 lb.
   See [decision 0009](https://github.com/ngiangre/cfbstats/blob/main/decisions/0009-finalize-roster-drop-weight-delta.md).
+- Fixed a silent fan-out and false-positive draft attribution in the
+  draft-outcome join: `picks` carries the full NFL draft history (back to 1936)
+  and CFBD reuses `collegeAthleteId` across eras, so a modern player's id could
+  match an ancient pick — duplicating a player-season and marking it `drafted`
+  off a pre-window draft. `link_drafted()` now ignores picks outside the
+  plausible draft window (`draft_window`, default `2010:2026`) and collapses the
+  outcome to one pick per `playerId`, making the join strictly 1:1 and only ever
+  marking `drafted` for an in-window pick. The new `contract_drafted()`
+  (`ok_drafted`, fed into the `link_drafted` audit record) and
+  `tests/testthat/test-link.R` guard against regressions.
+  See [decision 0011](https://github.com/ngiangre/cfbstats/blob/main/decisions/0011-draft-outcome-one-pick-per-player.md).
 - Team logos & colors: a `teams` display dimension sourced from CFBD `/teams`
   (`ingest_teams()`/`clean_teams()`, `data/teams.parquet`), joined by school name
   via `link_team_meta()` at the report layer only (kept off the model path).
@@ -46,6 +67,13 @@ layer, and the documentation site, all under version control.
   See [decision 0006](https://github.com/ngiangre/cfbstats/blob/main/decisions/0006-quarto-site-architecture-and-viz.md).
 - Site renders reuse a committed Quarto freeze cache (`_quarto/_freeze/`) so CI
   is faster and deterministic.
+- Reworked the fan-facing Home (`README.md`) and About page for the
+  non-technical fan in [VISION.md](https://github.com/ngiangre/cfbstats/blob/main/VISION.md)
+  §10: added a "Where to start" fan path (About → Explore → Analysis) on the
+  README, translated the About page's scope and methodology into plain football
+  language, and tucked the statistical/tooling detail (the two cultures,
+  out-of-time validation, decision log, `testthat`/`pointblank`) into a
+  collapsible "For the stats-minded" callout so coders still have it.
 
 ## Project conventions
 

@@ -7,40 +7,61 @@ vignette: >
 ---
 
 `cfbstats` studies what shapes a college football player's path to the NFL
-draft, and how well it can be forecast from information available during their
-career. The full working plan lives in the project's `VISION.md`; this page is
-the short version.
+draft, and how well we could have seen it coming from what we knew during their
+career. This page is the short version; the full working plan lives in the
+project's [VISION.md](https://github.com/ngiangre/cfbstats/blob/main/VISION.md).
 
 ## The questions
 
-- What variables of a player's college career actually matter for turning pro?
-- Does the **head coach** matter (and later, coordinators / position / S&C
-  coaches)?
-- After each season, what is a player's **percent chance of being drafted**, by
-  position?
+- What is it about a player's college career that actually predicts turning pro?
+- Does the **head coach** matter (and later, coordinators, position coaches, and
+  strength & conditioning staff)?
+- After each season, what is a player's **percent chance of being drafted**,
+  broken down by position?
 
-## Scope (v1)
+Want to chase your own version of these? The **Explore** page lets you poke at
+the data with interactive charts, and **Analysis** collects the write-ups as
+they take shape.
 
-- **Coaching:** head coach + program signal (wins, SRS, SP+), plus **coaching
-  changes** between seasons.
-- **Transfers:** whether a player changed schools, and the **direction** on a
-  season-aware 3-tier scale (Power / Group of 5 / FCS-and-below).
-- **Physical attributes:** roster height and weight. (Between-season *weight
-  change* was intended but the `/roster` weight is static per player, so it is
-  not derivable from that source — see the Data page.)
-- **Outcome:** drafted. **Population:** players with a stat line, in
-  draft-eligible seasons.
+## What we're looking at first
 
-## Guiding philosophy
+- **Coaching:** who the head coach is and how the program is doing (wins and a
+  couple of standard team-strength ratings), plus whether the **head coach
+  changed** from one season to the next.
+- **Transfers:** whether a player switched schools, and whether that move was a
+  step **up, sideways, or down** in level of competition (Power conference,
+  Group of Five, or FCS-and-below) — measured season by season, since
+  conferences shuffle over the years.
+- **Size:** the player's height and weight from the team roster. (We hoped to
+  track weight *changes* between seasons, but our source lists just one weight
+  per player, so that isn't possible yet — see the Data page.)
+- **Who we count and what counts as "made it":** every player with a college
+  stat line, in the seasons they were eligible for the draft; the outcome we
+  track is whether they were drafted.
 
-Breiman's *Two Cultures*, used side by side: **data models** for explanation and
-inference, **algorithmic models** for prediction — with **out-of-time
-validation** as the headline metric (a model predicting a draft class only sees
-data through the prior season).
+## How we try to answer them
 
-## How we work
+We go after every question two ways at once:
 
-Decisions are recorded in an ADR-style **decision log**; logic is tested with
-`testthat` and data with `pointblank` **contracts** that run inside the
-pipeline. See the Data page for the resulting provenance record and the Pipeline
-page for the processing graph.
+- **Why** — which things actually carry information about turning pro, and how
+  sure we can be about each one.
+- **How well we can call it** — whether we could genuinely have *predicted*
+  future draft classes, not just explained the past after the fact.
+
+The honest test is the second one. When we say a model can predict a draft
+class, it's only allowed to use what we'd have known *before* that class was
+picked — no peeking at the future. That's a much harder bar than fitting numbers
+we already have, and it's the one we hold ourselves to.
+
+::: {.callout-note collapse="true"}
+## For the stats-minded
+
+This follows Breiman's *Two Cultures*, used side by side: **data models** for
+explanation and inference, **algorithmic models** for prediction — with
+**out-of-time validation** as the headline metric (a model predicting a draft
+class only sees data through the prior season). Decisions are recorded in an
+ADR-style **decision log**; logic is tested with `testthat` and data with
+`pointblank` **contracts** that run inside the pipeline. The **Data** page has
+the resulting provenance record and the **Pipeline** page has the processing
+graph.
+:::

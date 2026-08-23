@@ -4,10 +4,10 @@
 \alias{ingest_roster}
 \title{Ingest team rosters for one or more years}
 \usage{
-ingest_roster(years = 2010:2025)
+ingest_roster(years = 2010:2026)
 }
 \arguments{
-\item{years}{Integer vector of seasons (default 2010:2025).}
+\item{years}{Integer vector of seasons (default 2010:2026).}
 }
 \value{
 A tibble, one row per player-season on a roster, with an authoritative

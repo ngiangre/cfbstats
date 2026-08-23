@@ -44,6 +44,17 @@ Anyone who loves college football and is curious about what the numbers say —
 whether or not you write code. Findings will be shared as a website with plain
 articles, deeper analysis, and interactive visualizations.
 
+## Where to start
+
+- **[About](vignettes/about.qmd)** — the short version of what we're asking and why.
+- **[Explore](vignettes/explore.qmd)** — poke at the data yourself with
+  interactive charts, and take your own questions for a spin.
+- **[Analysis](vignettes/analysis.qmd)** — the write-ups, as they take shape.
+
+Curious how the numbers are built and checked? The
+**[Data](vignettes/data.qmd)** and **[Pipeline](vignettes/pipeline.qmd)** pages
+are for readers who want to look under the hood.
+
 ## The data
 
 We build on the excellent [College Football Data](https://collegefootballdata.com)
@@ -53,5 +64,5 @@ records — and expect to fold in other public sources over time.
 ## Status
 
 Early days. This is a personal project and a work in progress; the goals above
-are the north star, and the "how" is deliberately still open as we learn. See
-[VISION.md](VISION.md) for the working plan.
+are the north star, and the "how" is deliberately still open as we learn. If you
+want the full working plan behind the scenes, see [VISION.md](VISION.md).

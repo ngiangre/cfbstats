@@ -4,10 +4,10 @@
 \alias{ingest_player_stats}
 \title{Ingest player season stats for one or more years}
 \usage{
-ingest_player_stats(years = 2010:2025)
+ingest_player_stats(years = 2010:2026)
 }
 \arguments{
-\item{years}{Integer vector of seasons (default 2010:2025).}
+\item{years}{Integer vector of seasons (default 2010:2026).}
 }
 \value{
 A long tibble of player-season stats across \code{years}.

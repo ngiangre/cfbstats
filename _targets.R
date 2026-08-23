@@ -80,6 +80,12 @@ list(
       )$coverage
     )
   ),
+  tar_target(
+    ok_drafted,
+    pointblank::all_passed(
+      contract_drafted(ps_draft, ps_tier, stop_on_fail = FALSE)
+    )
+  ),
 
   # ---- link -----------------------------------------------------------------
   tar_target(player_season, build_player_season(player_stats)),
@@ -159,7 +165,14 @@ list(
         ps_coach,
         contract_passed = ok_tiers
       ),
-      audit_step(ps_draft, "link_drafted", "link", ps_tier),
+      audit_step(
+        ps_draft,
+        "link_drafted",
+        "link",
+        ps_tier,
+        keys = c("playerId", "season"),
+        contract_passed = ok_drafted
+      ),
       audit_step(ps_change, "add_change_features", "features", ps_draft),
       audit_step(
         model_table,

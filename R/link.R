@@ -105,21 +105,42 @@ link_team_meta <- function(x, teams) {
 #' (decision 0003). Outcome definition is refined in the features/model stages
 #' (draft-eligible seasons only; out-of-time framing).
 #'
+#' `picks` carries the full NFL draft history (back to 1936) and CFBD reuses
+#' `collegeAthleteId` across eras, so a modern player's id can match a pick from
+#' decades earlier. Left unchecked that fans out the join (duplicating a
+#' player-season) and falsely attributes an ancient draft to a current player
+#' (decision 0011). Since a 2010-2026 college career can only lead to a
+#' 2010-2027 draft, picks outside `draft_window` are dropped before the join —
+#' this removes the pre-window collision artifacts entirely. The lookup is then
+#' collapsed to **one pick per `playerId`** (most recent, a guard against any
+#' future intra-window collision), so the join is strictly 1:1 on `playerId`,
+#' adds no rows, and marks `drafted` only for a plausible in-window pick.
+#'
 #' @param player_season Player-season backbone.
 #' @param picks Cleaned picks from [clean_picks()].
+#' @param draft_window Integer vector of plausible draft years for players in
+#'   the backbone; picks outside it are ignored. Defaults to `2010:2027` (the
+#'   2010-2026 stats window plus the following spring's draft).
 #'
 #' @return `player_season` with `drafted`, `draft_year`, `draft_round`,
-#'   `draft_overall`.
+#'   `draft_overall`. Same row count as `player_season`.
 #' @export
-link_drafted <- function(player_season, picks) {
+link_drafted <- function(player_season, picks, draft_window = 2010:2027) {
   draft_lookup <- picks |>
-    dplyr::filter(!is.na(.data$playerId)) |>
-    dplyr::distinct(
+    dplyr::filter(
+      !is.na(.data$playerId),
+      .data$year %in% draft_window
+    ) |>
+    dplyr::transmute(
       .data$playerId,
       draft_year = .data$year,
       draft_round = .data$round,
       draft_overall = .data$overall
-    )
+    ) |>
+    # Guard against any future intra-window id collision: keep the most recent
+    # pick so the lookup is one row per player (decision 0011).
+    dplyr::arrange(.data$playerId, dplyr::desc(.data$draft_year)) |>
+    dplyr::distinct(.data$playerId, .keep_all = TRUE)
   player_season |>
     dplyr::left_join(draft_lookup, by = "playerId") |>
     dplyr::mutate(drafted = !is.na(.data$draft_year))
