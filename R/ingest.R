@@ -73,6 +73,30 @@ ingest_player_stats <- function(years = 2010:2026) {
     purrr::list_rbind()
 }
 
+#' Ingest high-school recruiting ratings for one or more years
+#'
+#' Pulls `/recruiting/players` per year: one row per HS recruit with the
+#' industry `stars` (2-5), composite `rating` (~0.74-1.0), and national
+#' `ranking`. The `athleteId` (string) is the CFBD athlete key that joins to
+#' [ingest_roster()]'s `id` and, coerced from int, `picks$collegeAthleteId`
+#' (decision 0003 namespace). Recruits with no `athleteId` (~50%: never
+#' enrolled, JUCO/international, or unlinked) cannot be joined and are kept as-is
+#' here; filtering is a cleaning/feature concern.
+#'
+#' @param years Integer vector of recruiting classes (default 2010:2026).
+#'
+#' @return A flat tibble, one row per recruit, with `hometownInfo` unnested.
+#' @export
+ingest_recruiting <- function(years = 2010:2026) {
+  rlang::check_installed(c("purrr", "tidyr"))
+  purrr::map(
+    as.integer(years),
+    \(y) cfbd_get("/recruiting/players", query = list(year = y))
+  ) |>
+    purrr::list_rbind() |>
+    tidyr::unnest(cols = "hometownInfo", names_sep = "_")
+}
+
 #' Ingest head coaches
 #'
 #' Pulls `/coaches` and unnests the per-season `seasons` block. Head coaches

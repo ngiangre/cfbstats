@@ -144,3 +144,43 @@ clean_roster <- function(roster) {
       )
     )
 }
+
+#' Clean high-school recruiting ratings
+#'
+#' Standardizes the raw recruiting feed to a **per-athlete** rating table keyed
+#' by the string `playerId` (from `athleteId`). Recruits with no `athleteId`
+#' cannot join the athlete-id namespace (decision 0003) and are dropped here
+#' (~40% of the feed: never enrolled, JUCO/international, or unlinked).
+#' Deduplicates to one row per athlete, keeping the highest `rating` (then
+#' `stars`, then most recent class) since a player can appear in more than one
+#' record/class — the same dedupe philosophy as [clean_teams()].
+#'
+#' The recruiting `athleteId` is **not** a reliable member of the shared
+#' athlete-id namespace: it collides across different people (decision 0013), so
+#' the join this table feeds must be name-guarded — see [link_recruiting()].
+#'
+#' @param recruiting Raw recruiting tibble from [ingest_recruiting()].
+#'
+#' @return A cleaned tibble, one row per recruited athlete, keyed by `playerId`.
+#' @export
+clean_recruiting <- function(recruiting) {
+  recruiting |>
+    dplyr::filter(!is.na(.data$athleteId)) |>
+    dplyr::transmute(
+      playerId = as.character(.data$athleteId),
+      recruit_name = .data$name,
+      hs_class = as.integer(.data$year),
+      stars = as.integer(.data$stars),
+      rating = as.double(.data$rating),
+      national_rank = as.integer(.data$ranking),
+      recruit_position = .data$position,
+      committed_to = .data$committedTo
+    ) |>
+    dplyr::arrange(
+      .data$playerId,
+      dplyr::desc(.data$rating),
+      dplyr::desc(.data$stars),
+      dplyr::desc(.data$hs_class)
+    ) |>
+    dplyr::distinct(.data$playerId, .keep_all = TRUE)
+}

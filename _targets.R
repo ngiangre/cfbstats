@@ -25,12 +25,14 @@ list(
   tar_target(teams_file, "data/teams.parquet", format = "file"),
   tar_target(tiers_file, "data/conference_tiers.parquet", format = "file"),
   tar_target(roster_file, "data/roster.parquet", format = "file"),
+  tar_target(recruiting_file, "data/recruiting.parquet", format = "file"),
   tar_target(raw_picks, arrow::read_parquet(picks_file)),
   tar_target(raw_player_stats, arrow::read_parquet(player_stats_file)),
   tar_target(raw_coaches, arrow::read_parquet(coaches_file)),
   tar_target(raw_teams, arrow::read_parquet(teams_file)),
   tar_target(tiers, arrow::read_parquet(tiers_file)),
   tar_target(raw_roster, arrow::read_parquet(roster_file)),
+  tar_target(raw_recruiting, arrow::read_parquet(recruiting_file)),
 
   # ---- clean ----------------------------------------------------------------
   tar_target(picks, clean_picks(raw_picks)),
@@ -38,6 +40,7 @@ list(
   tar_target(coaches, clean_coaches(raw_coaches)),
   tar_target(teams, clean_teams(raw_teams)),
   tar_target(roster, clean_roster(raw_roster)),
+  tar_target(recruiting, clean_recruiting(raw_recruiting)),
 
   # ---- contracts (decision 0005): pass/fail feeds the audit log -------------
   tar_target(
@@ -62,6 +65,12 @@ list(
     ok_roster,
     pointblank::all_passed(
       contract_roster(roster, stop_on_fail = FALSE)
+    )
+  ),
+  tar_target(
+    ok_recruiting,
+    pointblank::all_passed(
+      contract_recruiting(recruiting, stop_on_fail = FALSE)
     )
   ),
   tar_target(
@@ -92,6 +101,8 @@ list(
   tar_target(ps_coach, link_coaches(player_season, coaches)),
   tar_target(ps_tier, link_tiers(ps_coach, tiers)),
   tar_target(ps_draft, link_drafted(ps_tier, picks)),
+  # HS recruiting ratings, name-guarded (decision 0013); kept off the model path.
+  tar_target(ps_recruit, link_recruiting(player_season, recruiting)),
 
   # ---- features -------------------------------------------------------------
   tar_target(ps_change, add_change_features(ps_draft)),
@@ -137,6 +148,14 @@ list(
         contract_passed = ok_roster
       ),
       audit_step(
+        recruiting,
+        "clean_recruiting",
+        "clean",
+        raw_recruiting,
+        keys = "playerId",
+        contract_passed = ok_recruiting
+      ),
+      audit_step(
         teams,
         "clean_teams",
         "clean",
@@ -179,6 +198,13 @@ list(
         "add_roster_weight",
         "features",
         ps_change,
+        keys = c("playerId", "season")
+      ),
+      audit_step(
+        ps_recruit,
+        "link_recruiting",
+        "link",
+        player_season,
         keys = c("playerId", "season")
       )
     )

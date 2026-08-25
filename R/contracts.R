@@ -215,3 +215,37 @@ contract_roster <- function(roster, stop_on_fail = TRUE) {
     pointblank::interrogate()
   enforce_contract(agent, "roster", stop_on_fail)
 }
+
+#' Data contract for cleaned recruiting ratings
+#'
+#' Validates the per-athlete recruiting-rating table ([clean_recruiting()]):
+#' keyed 1:1 on a non-null `playerId`, with `stars`/`rating`/`national_rank` in
+#' their documented ranges and the HS class inside a plausible window. The
+#' wrong-person id-collision is a *join-time* concern handled by the name guard
+#' in [link_recruiting()] (decision 0013), not asserted here.
+#'
+#' @param recruiting Cleaned recruiting (see [clean_recruiting()]).
+#' @param stop_on_fail Abort on failure (default `TRUE`)?
+#' @return The interrogated pointblank agent, invisibly.
+#' @export
+contract_recruiting <- function(recruiting, stop_on_fail = TRUE) {
+  rlang::check_installed("pointblank")
+  agent <- pointblank::create_agent(recruiting, label = "recruiting") |>
+    pointblank::col_exists(c(
+      "playerId",
+      "recruit_name",
+      "hs_class",
+      "stars",
+      "rating",
+      "national_rank"
+    )) |>
+    pointblank::col_vals_not_null(pointblank::vars(playerId)) |>
+    pointblank::rows_distinct(pointblank::vars(playerId)) |>
+    pointblank::col_vals_between("stars", 2, 5, na_pass = TRUE) |>
+    # Composite is a 0-1 index by construction; most rated players sit ~0.7-1.0
+    # but a tail of 2-stars dips lower, so bound structurally at [0, 1].
+    pointblank::col_vals_between("rating", 0, 1.0, na_pass = TRUE) |>
+    pointblank::col_vals_between("hs_class", 2010, 2027, na_pass = TRUE) |>
+    pointblank::interrogate()
+  enforce_contract(agent, "recruiting", stop_on_fail)
+}

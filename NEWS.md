@@ -6,6 +6,22 @@ layer, and the documentation site, all under version control.
 
 ## Pipeline & data
 
+- Added **high-school recruiting ratings** as a first-class table
+  (`ingest_recruiting()` → `data/recruiting.parquet`, published on the
+  `data-latest` release): CFBD `stars`/`rating`/`ranking` per recruit.
+  `clean_recruiting()` builds a per-athlete rating table and
+  `link_recruiting()` attaches it to the player-season backbone behind a
+  **normalized-name guard** — the recruiting `athleteId` is a *separate*
+  namespace that collides across different people (Cam Ward's id maps to a
+  different recruit, Xavier Ward), so a rating is trusted only when the recruit
+  name agrees with the backbone name; wrong-person ratings are nulled and
+  flagged by `recruit_matched`. Guarded, honest coverage of drafted players is
+  ~60–72% for recent classes; genuinely unranked players (like Cam Ward) are
+  absent by design. Guarded by `contract_recruiting()` (`ok_recruiting`), a data
+  dictionary (`inst/dict/recruiting.yml`, dict-parity test), and
+  `tests/testthat/test-recruiting.R`. Kept off the model path for now (like the
+  team display dimension).
+  See [decision 0013](https://github.com/ngiangre/cfbstats/blob/main/decisions/0013-recruiting-id-namespace-collision.md).
 - Extended the data window from 2010–2025 to **2010–2026**: `ingest_player_stats()`
   and `ingest_roster()` now default to `2010:2026` (and `data-raw/refresh.R` pulls
   through 2026), with the season contracts (`contract_player_stats()`,
