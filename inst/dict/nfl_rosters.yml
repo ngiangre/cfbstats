@@ -1,0 +1,52 @@
+dataset: nfl_rosters
+source: nflverse nflreadr::load_rosters (seasons 2010–2026)
+grain: one player-season on an NFL roster
+key: (gsis_id, season)
+description: >
+  nflverse season rosters, one row per player-season. The source for the
+  primary longevity measure — distinct NFL seasons on a roster — which, unlike
+  a stats-based definition, counts linemen / special-teamers / backups who
+  accrue no box-score stats (decision 0014). clean_nfl_rosters drops rows with
+  no gsis_id (unlinkable) and dedupes to one row per player-season. Roster
+  presence for recent seasons is right-censored (players still active).
+columns:
+  - name: gsis_id
+    type: string
+    description: nflverse GSIS player id; joins to nfl_draft_picks / nfl_player_stats.
+    provenance: raw
+  - name: season
+    type: int32
+    description: NFL season.
+    provenance: raw
+  - name: nfl_team
+    type: string
+    description: Team abbreviation.
+    provenance: raw (team)
+  - name: position
+    type: string
+    description: Roster position.
+    provenance: raw
+  - name: status
+    type: string
+    description: Roster status (e.g. ACT, RES, CUT).
+    provenance: raw
+  - name: years_exp
+    type: int32
+    description: Years of NFL experience entering the season.
+    provenance: raw
+  - name: height
+    type: double
+    description: Height in inches.
+    provenance: raw
+  - name: weight
+    type: int32
+    description: Weight in pounds.
+    provenance: raw
+  - name: college
+    type: string
+    description: College attended.
+    provenance: raw
+  - name: rookie_year
+    type: int32
+    description: The player's rookie NFL season; NA where unknown.
+    provenance: raw

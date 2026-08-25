@@ -14,6 +14,8 @@ The project is a collaboration driven by a running set of questions:
   coordinators, position coaches, strength & conditioning coaches, assistants.
 - After each season, what is a player's **percent chance of being drafted**,
   by position?
+- For the players who *do* get drafted, what do they go on to do in the NFL —
+  the statistics they put up, and **how long they last** (decision 0014)?
 
 We want both an **explanatory** answer (which factors carry information, with
 uncertainty) and a **predictive** answer (honest out-of-time forecasting of
@@ -57,6 +59,12 @@ hypotheses — judging performance, robustness, and forecasting ability.
   lagged/delta features to the draft-eligible player-season row — a career
   sequence, not independent snapshots.
 - **Outcome**: drafted (from the CFBD `/draft/picks` endpoint).
+- **NFL outcomes** (labels, not inputs): for drafted players, their NFL career
+  from nflverse — **how long they last** (distinct seasons on an NFL roster,
+  plus career games and last active season) and their NFL box-score statistics.
+  Linked to CFBD picks by draft slot, **right-censored** for recent classes, and
+  kept **off the model input path** — they are outcomes to describe/forecast,
+  not features (decision 0014).
 - **Population (denominator)**: every player with a college stat line, limited
   to their **draft-eligible seasons**.
 - **Censoring** (still-enrolled players, transfers, early declares): handled
@@ -86,6 +94,20 @@ CFBD API (`https://api.collegefootballdata.com`), key in `CFBD_API_KEY`:
 - `/player/portal` (optional, recent years) — transfer-portal metadata
   (stars, rating, transfer date) to enrich transfer detection.
 
+nflverse (`nflreadr`, no API key) — **post-draft NFL outcomes**, linked to CFBD
+picks by draft slot `(year, round, overall)` == `(season, round, pick)` (CFBD's
+`nflAthleteId` is a different id namespace, so it is never used for the join;
+decision 0014):
+
+- `load_draft_picks()` — the bridge to nflverse player ids (`gsis_id`,
+  `pfr_player_id`) plus a Pro-Football-Reference career summary (games, seasons
+  started, last active season, career box-score totals, Pro Bowl / All-Pro /
+  HOF).
+- `load_rosters()` — one row per player-season on an NFL roster; the source for
+  the primary longevity measure (distinct roster seasons).
+- `load_player_stats()` — weekly NFL stats, aggregated to the player-season
+  (regular season) grain.
+
 Plus future scraped sources for assistant coaches.
 
 ### Data model (ERD sketch)
@@ -103,6 +125,9 @@ erDiagram
     PLAYER_SEASON ||--o| PLAYER_SEASON : "prior season (lag)"
     TEAM_SEASON }o--|| HEAD_COACH_SEASON : "coached by"
     PLAYER_SEASON ||--o| DRAFT_PICK : "may result in"
+    DRAFT_PICK ||--o| NFL_DRAFT_PICK : "bridges (draft slot) to"
+    NFL_DRAFT_PICK ||--o{ NFL_ROSTER_SEASON : "career on NFL rosters"
+    NFL_DRAFT_PICK ||--o{ NFL_PLAYER_SEASON : "NFL stats by season"
 
     PLAYER_SEASON {
         string playerId
@@ -152,6 +177,32 @@ erDiagram
         double seasons_srs
         double seasons_spOffense
         double seasons_spDefense
+    }
+    NFL_DRAFT_PICK {
+        int season "draft slot key"
+        int round
+        int pick
+        string gsis_id "nflverse player key"
+        string pfr_player_id
+        int games "PFR career games"
+        int seasons_started
+        int to "last active NFL season"
+    }
+    NFL_ROSTER_SEASON {
+        string gsis_id
+        int season
+        string nfl_team
+        string position
+        int years_exp
+    }
+    NFL_PLAYER_SEASON {
+        string gsis_id
+        int season
+        int games
+        int pass_yards
+        int rush_yards
+        int rec_yards
+        double def_sacks
     }
 ```
 

@@ -249,3 +249,127 @@ contract_recruiting <- function(recruiting, stop_on_fail = TRUE) {
     pointblank::interrogate()
   enforce_contract(agent, "recruiting", stop_on_fail)
 }
+
+# ---- NFL outcomes via nflverse (decision 0014) ------------------------------
+
+#' Data contract for cleaned NFL draft picks (nflverse)
+#'
+#' Asserts the bridge/career table ([clean_nfl_draft_picks()]) is keyed 1:1 on
+#' the draft slot (`season`/`round`/`pick`) — the join key to CFBD picks — with
+#' the season inside the nflverse window and career counts non-negative.
+#'
+#' @param nfl_draft_picks Cleaned nflverse draft picks.
+#' @param stop_on_fail Abort on failure (default `TRUE`)?
+#' @return The interrogated pointblank agent, invisibly.
+#' @export
+contract_nfl_draft_picks <- function(nfl_draft_picks, stop_on_fail = TRUE) {
+  rlang::check_installed("pointblank")
+  agent <- pointblank::create_agent(
+    nfl_draft_picks,
+    label = "nfl_draft_picks"
+  ) |>
+    pointblank::col_exists(c(
+      "season",
+      "round",
+      "pick",
+      "gsis_id",
+      "pfr_player_id",
+      "pfr_player_name",
+      "to",
+      "games",
+      "seasons_started"
+    )) |>
+    pointblank::col_vals_not_null(pointblank::vars(season, round, pick)) |>
+    pointblank::rows_distinct(pointblank::vars(season, round, pick)) |>
+    pointblank::col_vals_between("season", 2010, 2026) |>
+    pointblank::col_vals_gte("games", 0, na_pass = TRUE) |>
+    pointblank::interrogate()
+  enforce_contract(agent, "nfl_draft_picks", stop_on_fail)
+}
+
+#' Data contract for cleaned NFL rosters (nflverse)
+#'
+#' Asserts the roster table ([clean_nfl_rosters()]) is keyed 1:1 on
+#' `gsis_id` × `season` (the basis for the roster-seasons longevity measure),
+#' with the season inside the window and weight in a plausible NFL range.
+#'
+#' @param nfl_rosters Cleaned nflverse rosters.
+#' @param stop_on_fail Abort on failure (default `TRUE`)?
+#' @return The interrogated pointblank agent, invisibly.
+#' @export
+contract_nfl_rosters <- function(nfl_rosters, stop_on_fail = TRUE) {
+  rlang::check_installed("pointblank")
+  agent <- pointblank::create_agent(nfl_rosters, label = "nfl_rosters") |>
+    pointblank::col_exists(c("gsis_id", "season", "nfl_team", "years_exp")) |>
+    pointblank::col_vals_not_null(pointblank::vars(gsis_id, season)) |>
+    pointblank::rows_distinct(pointblank::vars(gsis_id, season)) |>
+    pointblank::col_vals_between("season", 2010, 2026) |>
+    pointblank::col_vals_between("weight", 100, 500, na_pass = TRUE) |>
+    pointblank::interrogate()
+  enforce_contract(agent, "nfl_rosters", stop_on_fail)
+}
+
+#' Data contract for cleaned NFL player stats (nflverse)
+#'
+#' Asserts the season-aggregated stats table ([clean_nfl_player_stats()]) is
+#' keyed 1:1 on `gsis_id` × `season`, in-window, with non-negative counting
+#' totals.
+#'
+#' @param nfl_player_stats Cleaned nflverse player-season stats.
+#' @param stop_on_fail Abort on failure (default `TRUE`)?
+#' @return The interrogated pointblank agent, invisibly.
+#' @export
+contract_nfl_player_stats <- function(nfl_player_stats, stop_on_fail = TRUE) {
+  rlang::check_installed("pointblank")
+  agent <- pointblank::create_agent(
+    nfl_player_stats,
+    label = "nfl_player_stats"
+  ) |>
+    pointblank::col_exists(c(
+      "gsis_id",
+      "season",
+      "games",
+      "pass_yards",
+      "rush_yards",
+      "rec_yards"
+    )) |>
+    pointblank::col_vals_not_null(pointblank::vars(gsis_id, season)) |>
+    pointblank::rows_distinct(pointblank::vars(gsis_id, season)) |>
+    pointblank::col_vals_between("season", 2010, 2026) |>
+    pointblank::col_vals_gte("games", 0) |>
+    pointblank::interrogate()
+  enforce_contract(agent, "nfl_player_stats", stop_on_fail)
+}
+
+#' Data contract for the NFL draft-slot bridge
+#'
+#' Guards [link_nfl_draft()]: the slot join must preserve the `picks` row count
+#' exactly (nflverse slots are unique, so no fan-out), `nfl_matched` must be a
+#' complete logical, and an attached `gsis_id` must imply a validated
+#' name-guarded match.
+#'
+#' @param picks_nfl Picks with nflverse ids attached (see [link_nfl_draft()]).
+#' @param picks The pre-join CFBD picks; its row count is what `picks_nfl` must
+#'   preserve.
+#' @param stop_on_fail Abort on failure (default `TRUE`)?
+#' @return The interrogated pointblank agent, invisibly.
+#' @export
+contract_nfl_link <- function(picks_nfl, picks, stop_on_fail = TRUE) {
+  rlang::check_installed("pointblank")
+  n_expected <- nrow(picks)
+  check <- picks_nfl |>
+    dplyr::mutate(
+      # An attached id must coincide with a validated match.
+      id_implies_match = is.na(.data$gsis_id) | .data$nfl_matched
+    )
+  agent <- pointblank::create_agent(check, label = "nfl_link") |>
+    pointblank::col_exists(c("gsis_id", "pfr_player_id", "nfl_matched")) |>
+    pointblank::col_is_logical(pointblank::vars(nfl_matched)) |>
+    pointblank::col_vals_not_null(pointblank::vars(nfl_matched)) |>
+    pointblank::col_vals_equal("n", n_expected, preconditions = function(x) {
+      dplyr::mutate(x, n = nrow(x))
+    }) |>
+    pointblank::col_vals_equal("id_implies_match", TRUE) |>
+    pointblank::interrogate()
+  enforce_contract(agent, "nfl_link", stop_on_fail)
+}

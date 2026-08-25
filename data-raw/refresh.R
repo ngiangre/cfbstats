@@ -15,6 +15,17 @@ arrow::write_parquet(ingest_teams(), "data/teams.parquet")
 arrow::write_parquet(ingest_roster(years), "data/roster.parquet")
 arrow::write_parquet(ingest_recruiting(years), "data/recruiting.parquet")
 
+# NFL outcomes via nflverse (decision 0014) — no API key required.
+arrow::write_parquet(
+  ingest_nfl_draft_picks(years),
+  "data/nfl_draft_picks.parquet"
+)
+arrow::write_parquet(ingest_nfl_rosters(years), "data/nfl_rosters.parquet")
+arrow::write_parquet(
+  ingest_nfl_player_stats(years),
+  "data/nfl_player_stats.parquet"
+)
+
 cli::cli_alert_success(
   "Refreshed CFBD data into data/ for {min(years)}-{max(years)}."
 )

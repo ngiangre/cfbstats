@@ -27,7 +27,7 @@ it can't drift from what the code actually does.
 
 ```{mermaid}
 flowchart LR
-  ingest[ingest\nCFBD API] --> clean[clean\nstandardize + coerce keys]
+  ingest[ingest\nCFBD + nflverse] --> clean[clean\nstandardize + coerce keys]
   clean --> link[link\nplayer-season backbone + joins]
   link --> features[features\nlongitudinal change]
   features --> model[model\nexplain + predict]
@@ -67,5 +67,8 @@ if (length(outdated)) {
 queried year — the endpoint's own `year` is the eligibility class). But roster
 **weight is static per player**, so the decision-0003 between-season
 `weight_delta` is not derivable and was dropped; we keep the static roster
-`weight`. The `model` and `report` stages are wired placeholders.
+`weight`. The `model` and `report` stages are wired placeholders. Post-draft
+**NFL outcomes** (nflverse) are now ingested and bridged to picks by draft slot,
+but as *labels* — they stay off the model input path to avoid leakage (decision
+0014).
 :::

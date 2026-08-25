@@ -26,6 +26,18 @@ list(
   tar_target(tiers_file, "data/conference_tiers.parquet", format = "file"),
   tar_target(roster_file, "data/roster.parquet", format = "file"),
   tar_target(recruiting_file, "data/recruiting.parquet", format = "file"),
+  # NFL outcomes via nflverse (decision 0014).
+  tar_target(
+    nfl_draft_picks_file,
+    "data/nfl_draft_picks.parquet",
+    format = "file"
+  ),
+  tar_target(nfl_rosters_file, "data/nfl_rosters.parquet", format = "file"),
+  tar_target(
+    nfl_player_stats_file,
+    "data/nfl_player_stats.parquet",
+    format = "file"
+  ),
   tar_target(raw_picks, arrow::read_parquet(picks_file)),
   tar_target(raw_player_stats, arrow::read_parquet(player_stats_file)),
   tar_target(raw_coaches, arrow::read_parquet(coaches_file)),
@@ -33,6 +45,9 @@ list(
   tar_target(tiers, arrow::read_parquet(tiers_file)),
   tar_target(raw_roster, arrow::read_parquet(roster_file)),
   tar_target(raw_recruiting, arrow::read_parquet(recruiting_file)),
+  tar_target(raw_nfl_draft_picks, arrow::read_parquet(nfl_draft_picks_file)),
+  tar_target(raw_nfl_rosters, arrow::read_parquet(nfl_rosters_file)),
+  tar_target(raw_nfl_player_stats, arrow::read_parquet(nfl_player_stats_file)),
 
   # ---- clean ----------------------------------------------------------------
   tar_target(picks, clean_picks(raw_picks)),
@@ -41,6 +56,9 @@ list(
   tar_target(teams, clean_teams(raw_teams)),
   tar_target(roster, clean_roster(raw_roster)),
   tar_target(recruiting, clean_recruiting(raw_recruiting)),
+  tar_target(nfl_draft_picks, clean_nfl_draft_picks(raw_nfl_draft_picks)),
+  tar_target(nfl_rosters, clean_nfl_rosters(raw_nfl_rosters)),
+  tar_target(nfl_player_stats, clean_nfl_player_stats(raw_nfl_player_stats)),
 
   # ---- contracts (decision 0005): pass/fail feeds the audit log -------------
   tar_target(
@@ -95,6 +113,30 @@ list(
       contract_drafted(ps_draft, ps_tier, stop_on_fail = FALSE)
     )
   ),
+  tar_target(
+    ok_nfl_draft_picks,
+    pointblank::all_passed(
+      contract_nfl_draft_picks(nfl_draft_picks, stop_on_fail = FALSE)
+    )
+  ),
+  tar_target(
+    ok_nfl_rosters,
+    pointblank::all_passed(
+      contract_nfl_rosters(nfl_rosters, stop_on_fail = FALSE)
+    )
+  ),
+  tar_target(
+    ok_nfl_player_stats,
+    pointblank::all_passed(
+      contract_nfl_player_stats(nfl_player_stats, stop_on_fail = FALSE)
+    )
+  ),
+  tar_target(
+    ok_nfl_link,
+    pointblank::all_passed(
+      contract_nfl_link(picks_nfl, picks, stop_on_fail = FALSE)
+    )
+  ),
 
   # ---- link -----------------------------------------------------------------
   tar_target(player_season, build_player_season(player_stats)),
@@ -103,6 +145,9 @@ list(
   tar_target(ps_draft, link_drafted(ps_tier, picks)),
   # HS recruiting ratings, name-guarded (decision 0013); kept off the model path.
   tar_target(ps_recruit, link_recruiting(player_season, recruiting)),
+  # NFL outcomes bridged to CFBD picks by draft slot (decision 0014); an
+  # outcome/label source, kept off the model input path.
+  tar_target(picks_nfl, link_nfl_draft(picks, nfl_draft_picks)),
 
   # ---- features -------------------------------------------------------------
   tar_target(ps_change, add_change_features(ps_draft)),
@@ -206,6 +251,38 @@ list(
         "link",
         player_season,
         keys = c("playerId", "season")
+      ),
+      audit_step(
+        nfl_draft_picks,
+        "clean_nfl_draft_picks",
+        "clean",
+        raw_nfl_draft_picks,
+        keys = c("season", "round", "pick"),
+        contract_passed = ok_nfl_draft_picks
+      ),
+      audit_step(
+        nfl_rosters,
+        "clean_nfl_rosters",
+        "clean",
+        raw_nfl_rosters,
+        keys = c("gsis_id", "season"),
+        contract_passed = ok_nfl_rosters
+      ),
+      audit_step(
+        nfl_player_stats,
+        "clean_nfl_player_stats",
+        "clean",
+        raw_nfl_player_stats,
+        keys = c("gsis_id", "season"),
+        contract_passed = ok_nfl_player_stats
+      ),
+      audit_step(
+        picks_nfl,
+        "link_nfl_draft",
+        "link",
+        picks,
+        keys = "playerId",
+        contract_passed = ok_nfl_link
       )
     )
   )

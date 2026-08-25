@@ -53,6 +53,20 @@ viz_scatter_2d(
 viz_scatter_3d(picks, x = "height", y = "weight", z = "overall", color = "round")
 ```
 
+## NFL outcomes — how long drafted players last
+
+Each point is a drafted player bridged to nflverse (decision 0014), placed by
+draft round against the number of distinct **seasons they spent on an NFL
+roster** — the project's primary longevity measure. The **#1 overall picks** are
+highlighted against the rest of the field; the grey bar marks each round's
+median. Hover for the player. Recent draft classes are still active, so their
+counts are **right-censored** lower bounds.
+
+```{r}
+#| label: fig-nfl-longevity
+viz_nfl_roster_seasons_by_round(tar_read(picks_nfl), tar_read(nfl_rosters))
+```
+
 ## Branding — team logos
 
 The `teams` dimension carries each program's logo and colors, joined by school

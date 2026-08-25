@@ -1,0 +1,154 @@
+dataset: nfl_draft_picks
+source: nflverse nflreadr::load_draft_picks (draft seasons 2010–2026)
+grain: one NFL draft pick (unique on season/round/pick)
+key: (season, round, pick) — the slot key joined to CFBD picks (decision 0014)
+description: >
+  nflverse draft picks: the BRIDGE from CFBD picks to nflverse player ids
+  (gsis_id, pfr_player_id) plus a Pro-Football-Reference CAREER SUMMARY (games,
+  seasons_started, last active season `to`, weighted/draft AV, Pro Bowl /
+  All-Pro / HOF, and career box-score totals). Linked to CFBD picks by draft
+  slot (year/round/overall), NEVER by CFBD nflAthleteId — a different id
+  namespace (decision 0014). clean_nfl_draft_picks drops the source `car_av`
+  (all-NA for this window). Career totals are right-censored for recent classes
+  still active.
+columns:
+  - name: season
+    type: int32
+    description: Draft season.
+    provenance: raw
+  - name: round
+    type: int32
+    description: Draft round.
+    provenance: raw
+  - name: pick
+    type: int32
+    description: Overall pick number (== CFBD `overall`).
+    provenance: raw
+  - name: nfl_team
+    type: string
+    description: Drafting NFL team abbreviation.
+    provenance: raw (team)
+  - name: gsis_id
+    type: string
+    description: nflverse GSIS player id; the key into rosters and player stats.
+    provenance: raw
+  - name: pfr_player_id
+    type: string
+    description: Pro-Football-Reference player id.
+    provenance: raw
+  - name: cfb_player_id
+    type: string
+    description: >
+      nflverse's college-football player id; corroborates the slot bridge but
+      not the authoritative key.
+    provenance: raw
+  - name: pfr_player_name
+    type: string
+    description: >
+      Player name per PFR; used for the link-time name guard (link_nfl_draft)
+      and QA — do not join on name.
+    provenance: raw
+  - name: position
+    type: string
+    description: Position per PFR.
+    provenance: raw
+  - name: side
+    type: string
+    description: Side of ball (offense/defense/special).
+    provenance: raw
+  - name: college
+    type: string
+    description: College per PFR.
+    provenance: raw
+  - name: age
+    type: int32
+    description: Age at draft.
+    provenance: raw
+  - name: to
+    type: int32
+    description: Last season the player was active (PFR "To"); NA if never played.
+    provenance: raw
+  - name: hof
+    type: logical
+    description: Hall of Fame flag.
+    provenance: raw
+  - name: allpro
+    type: int32
+    description: Career first-team All-Pro selections.
+    provenance: raw
+  - name: probowls
+    type: int32
+    description: Career Pro Bowl selections.
+    provenance: raw
+  - name: seasons_started
+    type: int32
+    description: Number of seasons as a primary starter (PFR).
+    provenance: raw
+  - name: w_av
+    type: int32
+    description: Weighted career Approximate Value (PFR); NA where unavailable.
+    provenance: raw
+  - name: dr_av
+    type: int32
+    description: Approximate Value accrued for the drafting team (PFR).
+    provenance: raw
+  - name: games
+    type: int32
+    description: Career games played (PFR).
+    provenance: raw
+  - name: pass_completions
+    type: int32
+    description: Career passing completions.
+    provenance: raw
+  - name: pass_attempts
+    type: int32
+    description: Career passing attempts.
+    provenance: raw
+  - name: pass_yards
+    type: int32
+    description: Career passing yards.
+    provenance: raw
+  - name: pass_tds
+    type: int32
+    description: Career passing touchdowns.
+    provenance: raw
+  - name: pass_ints
+    type: int32
+    description: Career interceptions thrown.
+    provenance: raw
+  - name: rush_atts
+    type: int32
+    description: Career rushing attempts.
+    provenance: raw
+  - name: rush_yards
+    type: int32
+    description: Career rushing yards.
+    provenance: raw
+  - name: rush_tds
+    type: int32
+    description: Career rushing touchdowns.
+    provenance: raw
+  - name: receptions
+    type: int32
+    description: Career receptions.
+    provenance: raw
+  - name: rec_yards
+    type: int32
+    description: Career receiving yards.
+    provenance: raw
+  - name: rec_tds
+    type: int32
+    description: Career receiving touchdowns.
+    provenance: raw
+  - name: def_solo_tackles
+    type: int32
+    description: Career solo tackles.
+    provenance: raw
+  - name: def_ints
+    type: int32
+    description: Career defensive interceptions.
+    provenance: raw
+  - name: def_sacks
+    type: double
+    description: Career sacks (may be fractional).
+    provenance: raw

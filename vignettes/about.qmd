@@ -18,6 +18,8 @@ project's [VISION.md](https://github.com/ngiangre/cfbstats/blob/main/VISION.md).
   strength & conditioning staff)?
 - After each season, what is a player's **percent chance of being drafted**,
   broken down by position?
+- For the players who get drafted, what do they go on to do in the NFL — the
+  statistics they put up, and **how long they last**?
 
 Want to chase your own version of these? The **Explore** page lets you poke at
 the data with interactive charts, and **Analysis** collects the write-ups as
@@ -38,6 +40,11 @@ they take shape.
 - **Who we count and what counts as "made it":** every player with a college
   stat line, in the seasons they were eligible for the draft; the outcome we
   track is whether they were drafted.
+- **What happens next:** for the players who get drafted, we now follow them into
+  the NFL — **how long they last** (seasons on an NFL roster) and the statistics
+  they put up, from [nflverse](https://nflverse.nflreadr.com/). This is an
+  *outcome* we describe and forecast, kept separate from anything used to predict
+  the draft itself.
 
 ## How we try to answer them
 

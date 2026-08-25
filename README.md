@@ -22,13 +22,15 @@ coming back to:
   coaches, even strength & conditioning staff?
 - If we take a snapshot of a player after each season, what are their chances of
   being drafted, given their position?
+- Once they're drafted, what do they go on to do in the NFL — the stats they put
+  up, and how long they stick around?
 
 ## What we want to do
 
 Our plan is to start simple and get more ambitious over time:
 
 1. **Describe** who gets drafted — the teams, positions, and hometowns they come
-   from.
+   from — and what they go on to do once they reach the NFL.
 2. **Explore** lots of possible connections between college performance,
    coaching, and the draft.
 3. **Predict** a player's chance of being drafted, honestly testing whether our
@@ -58,8 +60,10 @@ are for readers who want to look under the hood.
 ## The data
 
 We build on the excellent [College Football Data](https://collegefootballdata.com)
-API — historical NFL draft picks, player season statistics, and coaching
-records — and expect to fold in other public sources over time.
+API — historical NFL draft picks, player season statistics, and coaching records
+— and on [nflverse](https://nflverse.nflreadr.com/) for what happens *after* the
+draft: NFL rosters, statistics, and career longevity. We expect to fold in other
+public sources over time.
 
 ## Status
 
