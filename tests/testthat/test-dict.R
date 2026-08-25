@@ -16,6 +16,7 @@ dict_schema_specs <- list(
   coaches = list(file = "coaches.parquet", clean = clean_coaches),
   teams = list(file = "teams.parquet", clean = clean_teams),
   roster = list(file = "roster.parquet", clean = clean_roster),
+  recruiting = list(file = "recruiting.parquet", clean = clean_recruiting),
   conference_tiers = list(file = "conference_tiers.parquet", clean = identity)
 )
 

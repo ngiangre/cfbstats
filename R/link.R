@@ -145,3 +145,87 @@ link_drafted <- function(player_season, picks, draft_window = 2010:2027) {
     dplyr::left_join(draft_lookup, by = "playerId") |>
     dplyr::mutate(drafted = !is.na(.data$draft_year))
 }
+
+#' Normalize a player name for guarded matching
+#'
+#' Lowercases, strips punctuation, collapses whitespace, and removes a trailing
+#' generational suffix (Jr./Sr./II-V) so benign formatting differences don't
+#' defeat a name-agreement check. Base R only (no new pipeline dependency).
+#'
+#' @param x Character vector of names.
+#'
+#' @return A normalized character vector.
+#' @keywords internal
+normalize_name <- function(x) {
+  x <- tolower(x)
+  # Drop periods/apostrophes so "T.J." matches "TJ" and "D'Andre" matches "DAndre".
+  x <- gsub("[.'\u2019]", "", x)
+  # Other separators (hyphens, etc.) become spaces so surnames still split.
+  x <- gsub("[^a-z ]", " ", x)
+  x <- gsub("\\s+", " ", trimws(x))
+  x <- sub(" (jr|sr|ii|iii|iv|v)$", "", x)
+  trimws(x)
+}
+
+#' Attach name-guarded high-school recruiting ratings
+#'
+#' Left-joins the per-athlete recruiting ratings ([clean_recruiting()]) onto the
+#' player-season backbone on the string `playerId`, then **guards the join by
+#' name**. The recruiting `athleteId` collides across different people
+#' (decision 0013) — e.g. Cam Ward's id maps to a different recruit, Xavier Ward
+#' — so a rating is trusted only when the recruiting name agrees with the
+#' backbone `player` name after [normalize_name()]. Ratings from a
+#' name-conflicting (wrong-person) link are set to `NA`; `recruit_matched`
+#' records whether a validated rating was attached. The recruiting table is one
+#' row per `playerId`, so the join is many-to-one and never inflates the
+#' backbone.
+#'
+#' This is a display/feature enrichment kept off the model path for now (like
+#' [link_team_meta()]); wiring HS rating into the model is future work.
+#'
+#' @param player_season Player-season backbone from [build_player_season()]
+#'   (carries the athlete `player` name).
+#' @param recruiting Cleaned recruiting ratings from [clean_recruiting()].
+#'
+#' @return `player_season` with `hs_stars`, `hs_rating`, `hs_national_rank`,
+#'   `hs_class`, and `recruit_matched` attached. Same row count as
+#'   `player_season`.
+#' @export
+link_recruiting <- function(player_season, recruiting) {
+  player_season |>
+    dplyr::left_join(recruiting, by = "playerId") |>
+    dplyr::mutate(
+      recruit_matched = !is.na(.data$recruit_name) &
+        normalize_name(.data$player) == normalize_name(.data$recruit_name),
+      hs_stars = dplyr::if_else(
+        .data$recruit_matched,
+        .data$stars,
+        NA_integer_
+      ),
+      hs_rating = dplyr::if_else(
+        .data$recruit_matched,
+        .data$rating,
+        NA_real_
+      ),
+      hs_national_rank = dplyr::if_else(
+        .data$recruit_matched,
+        .data$national_rank,
+        NA_integer_
+      ),
+      hs_class = dplyr::if_else(
+        .data$recruit_matched,
+        .data$hs_class,
+        NA_integer_
+      )
+    ) |>
+    dplyr::select(
+      -dplyr::any_of(c(
+        "recruit_name",
+        "stars",
+        "rating",
+        "national_rank",
+        "recruit_position",
+        "committed_to"
+      ))
+    )
+}

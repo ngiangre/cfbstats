@@ -21,6 +21,7 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
 | `data/roster.parquet` | one player-season on a roster | `id`→`playerId` (string) + `season`; physicals/position/hometown. Weight is **static** per player (decision 0009) |
 | `data/teams.parquet` | one team (program) | join by school **name** (`team`); logos/colors, DISPLAY only (decision 0008) |
 | `data/conference_tiers.parquet` | season × conference | tier 3 Power / 2 G5 / 1 FCS-and-below (decision 0003) |
+| `data/recruiting.parquet` | one HS recruit | CFBD `athleteId`; `stars`/`rating`/`ranking`. Id is an **untrusted** namespace — join only via the name guard (decision 0013) |
 
 ### Gotchas (do not ignore)
 
@@ -49,6 +50,13 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
   contract enforces a 100–500 lb range (decision 0009).
 - **Conference tiers are season-aware** (Pac-12 collapse, Big East → AAC, WAC
   dropping FBS football); use the lookup, don't hard-code.
+- **Recruiting `athleteId` is NOT the shared namespace.** Unlike
+  `collegeAthleteId`/`roster.id`, the `/recruiting/players` `athleteId` collides
+  across different people (e.g. Cam Ward's id → a different recruit, Xavier
+  Ward). Never join recruiting on id alone — go through `link_recruiting()`,
+  which name-guards the join and nulls wrong-person ratings (decision 0013).
+  Genuinely unranked players (Cam Ward) are simply absent; model "unrated" as a
+  real category, don't impute.
 
 ## How we work
 
