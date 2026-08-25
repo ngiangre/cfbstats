@@ -17,7 +17,16 @@ dict_schema_specs <- list(
   teams = list(file = "teams.parquet", clean = clean_teams),
   roster = list(file = "roster.parquet", clean = clean_roster),
   recruiting = list(file = "recruiting.parquet", clean = clean_recruiting),
-  conference_tiers = list(file = "conference_tiers.parquet", clean = identity)
+  conference_tiers = list(file = "conference_tiers.parquet", clean = identity),
+  nfl_draft_picks = list(
+    file = "nfl_draft_picks.parquet",
+    clean = clean_nfl_draft_picks
+  ),
+  nfl_rosters = list(file = "nfl_rosters.parquet", clean = clean_nfl_rosters),
+  nfl_player_stats = list(
+    file = "nfl_player_stats.parquet",
+    clean = clean_nfl_player_stats
+  )
 )
 
 # dict `type` token -> the R storage type (typeof) it must map to.

@@ -173,6 +173,92 @@ viz_drafts_by_team <- function(model_table, teams, n = 15) {
   ggiraph::girafe(ggobj = p)
 }
 
+#' NFL roster-seasons (career length) by draft round, #1 overall highlighted
+#'
+#' For drafted players bridged to nflverse (decision 0014), plots the number of
+#' distinct NFL seasons each spent on a roster — the project's primary longevity
+#' measure — against draft round, with the **#1 overall picks** emphasized
+#' against the rest of the field. Interactive: hover a point for the player and
+#' their roster-season count. A per-round median crossbar aids comparison.
+#'
+#' Longevity is **right-censored** for recent draft classes still active, so
+#' those picks' counts are lower bounds, not completed careers.
+#'
+#' @param picks_nfl CFBD picks bridged to nflverse (see [link_nfl_draft()]);
+#'   needs `nfl_matched`, `round`, `overall`, `name`, `year`, `gsis_id`,
+#'   `playerId`.
+#' @param nfl_rosters Cleaned NFL rosters (see [clean_nfl_rosters()]); roster
+#'   seasons are counted as distinct `season` per `gsis_id`.
+#' @return A `ggiraph` (girafe) htmlwidget.
+#' @export
+viz_nfl_roster_seasons_by_round <- function(picks_nfl, nfl_rosters) {
+  rlang::check_installed(c("ggplot2", "ggiraph"))
+  roster_seasons <- nfl_rosters |>
+    dplyr::distinct(.data$gsis_id, .data$season) |>
+    dplyr::count(.data$gsis_id, name = "roster_seasons")
+  d <- picks_nfl |>
+    dplyr::filter(.data$nfl_matched, !is.na(.data$round)) |>
+    dplyr::left_join(roster_seasons, by = "gsis_id") |>
+    dplyr::mutate(
+      roster_seasons = dplyr::coalesce(.data$roster_seasons, 0L),
+      pick_group = dplyr::if_else(
+        .data$overall == 1,
+        "#1 overall pick",
+        "Other picks"
+      ),
+      tooltip = sprintf(
+        "%s (%d, R%d #%d): %d NFL season%s on a roster",
+        .data$name,
+        .data$year,
+        .data$round,
+        .data$overall,
+        .data$roster_seasons,
+        dplyr::if_else(.data$roster_seasons == 1L, "", "s")
+      )
+    ) |>
+    # Draw the #1 picks last so they sit on top of the field.
+    dplyr::arrange(.data$pick_group == "#1 overall pick")
+  p <- ggplot2::ggplot(
+    d,
+    ggplot2::aes(x = factor(.data$round), y = .data$roster_seasons)
+  ) +
+    ggplot2::stat_summary(
+      fun = stats::median,
+      fun.min = stats::median,
+      fun.max = stats::median,
+      geom = "crossbar",
+      width = 0.6,
+      colour = "grey40",
+      linewidth = 0.3
+    ) +
+    ggiraph::geom_point_interactive(
+      ggplot2::aes(
+        tooltip = .data$tooltip,
+        data_id = .data$playerId,
+        colour = .data$pick_group,
+        size = .data$pick_group
+      ),
+      position = ggplot2::position_jitter(width = 0.25, height = 0, seed = 7),
+      alpha = 0.75
+    ) +
+    ggplot2::scale_colour_manual(
+      values = c("#1 overall pick" = "#d1495b", "Other picks" = "#b0b7c0"),
+      name = NULL
+    ) +
+    ggplot2::scale_size_manual(
+      values = c("#1 overall pick" = 3.4, "Other picks" = 1.4),
+      guide = "none"
+    ) +
+    ggplot2::labs(
+      x = "Draft round",
+      y = "NFL seasons on a roster",
+      title = "How long drafted players last in the NFL, by draft round",
+      subtitle = "#1 overall picks highlighted; recent classes are right-censored"
+    ) +
+    viz_theme()
+  ggiraph::girafe(ggobj = p)
+}
+
 #' 3D interactive scatter via plotly
 #'
 #' @param data A data frame.

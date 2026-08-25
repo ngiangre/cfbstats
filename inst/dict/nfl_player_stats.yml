@@ -1,0 +1,89 @@
+dataset: nfl_player_stats
+source: nflverse nflreadr::load_player_stats (weekly, seasons 2010–2026)
+grain: one player-season (regular season only)
+key: (gsis_id, season)
+description: >
+  NFL production at the player-season grain, regular season only, aggregated
+  from the long weekly nflverse stats (decision 0014). Season totals for the
+  common passing / rushing / receiving / defensive box-score categories. Stat
+  column names match nfl_draft_picks' career totals. `games` counts weeks with
+  a recorded stat line (an approximation of games played, not roster games).
+  Season totals for recent seasons are censored (season may be incomplete or
+  not started).
+columns:
+  - name: gsis_id
+    type: string
+    description: nflverse GSIS player id (from weekly `player_id`).
+    provenance: derived (clean_nfl_player_stats)
+  - name: player_name
+    type: string
+    description: Player display name (QA / display only — do not join on name).
+    provenance: raw (player_display_name)
+  - name: season
+    type: int32
+    description: NFL season.
+    provenance: raw
+  - name: games
+    type: int32
+    description: Weeks with a recorded regular-season stat line.
+    provenance: derived (n_distinct week)
+  - name: pass_completions
+    type: int32
+    description: Season passing completions.
+    provenance: derived (sum completions)
+  - name: pass_attempts
+    type: int32
+    description: Season passing attempts.
+    provenance: derived (sum attempts)
+  - name: pass_yards
+    type: int32
+    description: Season passing yards.
+    provenance: derived (sum passing_yards)
+  - name: pass_tds
+    type: int32
+    description: Season passing touchdowns.
+    provenance: derived (sum passing_tds)
+  - name: pass_ints
+    type: int32
+    description: Season interceptions thrown.
+    provenance: derived (sum passing_interceptions)
+  - name: rush_atts
+    type: int32
+    description: Season rushing attempts.
+    provenance: derived (sum carries)
+  - name: rush_yards
+    type: int32
+    description: Season rushing yards.
+    provenance: derived (sum rushing_yards)
+  - name: rush_tds
+    type: int32
+    description: Season rushing touchdowns.
+    provenance: derived (sum rushing_tds)
+  - name: targets
+    type: int32
+    description: Season targets.
+    provenance: derived (sum targets)
+  - name: receptions
+    type: int32
+    description: Season receptions.
+    provenance: derived (sum receptions)
+  - name: rec_yards
+    type: int32
+    description: Season receiving yards.
+    provenance: derived (sum receiving_yards)
+  - name: rec_tds
+    type: int32
+    description: Season receiving touchdowns.
+    provenance: derived (sum receiving_tds)
+  - name: def_solo_tackles
+    type: int32
+    description: Season solo tackles.
+    provenance: derived (sum def_tackles_solo)
+  - name: def_sacks
+    type: double
+    description: Season sacks (may be fractional).
+    provenance: derived (sum def_sacks)
+  - name: def_ints
+    type: int32
+    description: Season defensive interceptions.
+    provenance: derived (sum def_interceptions)

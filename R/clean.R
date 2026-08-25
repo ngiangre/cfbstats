@@ -184,3 +184,161 @@ clean_recruiting <- function(recruiting) {
     ) |>
     dplyr::distinct(.data$playerId, .keep_all = TRUE)
 }
+
+# ---- NFL outcomes via nflverse (decision 0014) ------------------------------
+
+#' Clean NFL draft picks (nflverse)
+#'
+#' Standardizes the nflverse draft table to a curated, stable schema: the link
+#' keys (`gsis_id`, `pfr_player_id`, `cfb_player_id`, plus the draft slot) and a
+#' Pro-Football-Reference **career summary** (games, `seasons_started`, last
+#' active season `to`, weighted/draft AV, Pro Bowls / All-Pro / HOF, and career
+#' box-score totals). The source `car_av` is dropped — it arrives all-`NA` for
+#' our window (decision 0014). Stat column names are aligned with
+#' [clean_nfl_player_stats()] so the career and per-season tables share a
+#' vocabulary.
+#'
+#' @param nfl_draft_picks Raw tibble from [ingest_nfl_draft_picks()].
+#'
+#' @return A cleaned tibble, one row per draft pick (unique on
+#'   `season`/`round`/`pick`).
+#' @export
+clean_nfl_draft_picks <- function(nfl_draft_picks) {
+  nfl_draft_picks |>
+    dplyr::transmute(
+      season = as.integer(.data$season),
+      round = as.integer(.data$round),
+      pick = as.integer(.data$pick),
+      nfl_team = as.character(.data$team),
+      gsis_id = as.character(.data$gsis_id),
+      pfr_player_id = as.character(.data$pfr_player_id),
+      cfb_player_id = as.character(.data$cfb_player_id),
+      pfr_player_name = as.character(.data$pfr_player_name),
+      position = as.character(.data$position),
+      side = as.character(.data$side),
+      college = as.character(.data$college),
+      age = as.integer(.data$age),
+      to = as.integer(.data$to),
+      hof = as.logical(.data$hof),
+      allpro = as.integer(.data$allpro),
+      probowls = as.integer(.data$probowls),
+      seasons_started = as.integer(.data$seasons_started),
+      w_av = as.integer(.data$w_av),
+      dr_av = as.integer(.data$dr_av),
+      games = as.integer(.data$games),
+      pass_completions = as.integer(.data$pass_completions),
+      pass_attempts = as.integer(.data$pass_attempts),
+      pass_yards = as.integer(.data$pass_yards),
+      pass_tds = as.integer(.data$pass_tds),
+      pass_ints = as.integer(.data$pass_ints),
+      rush_atts = as.integer(.data$rush_atts),
+      rush_yards = as.integer(.data$rush_yards),
+      rush_tds = as.integer(.data$rush_tds),
+      receptions = as.integer(.data$receptions),
+      rec_yards = as.integer(.data$rec_yards),
+      rec_tds = as.integer(.data$rec_tds),
+      def_solo_tackles = as.integer(.data$def_solo_tackles),
+      def_ints = as.integer(.data$def_ints),
+      def_sacks = as.double(.data$def_sacks)
+    )
+}
+
+#' Clean NFL rosters (nflverse)
+#'
+#' Standardizes nflverse rosters to one row per `gsis_id` × `season`, keeping
+#' the fields needed to measure roster longevity and describe the player. Rows
+#' with no `gsis_id` (unlinkable to the rest of nflverse) are dropped, and the
+#' table is deduped to one row per player-season defensively.
+#'
+#' @param nfl_rosters Raw tibble from [ingest_nfl_rosters()].
+#'
+#' @return A cleaned tibble keyed by `gsis_id` and `season`.
+#' @export
+clean_nfl_rosters <- function(nfl_rosters) {
+  nfl_rosters |>
+    dplyr::filter(!is.na(.data$gsis_id)) |>
+    dplyr::transmute(
+      gsis_id = as.character(.data$gsis_id),
+      season = as.integer(.data$season),
+      nfl_team = as.character(.data$team),
+      position = as.character(.data$position),
+      status = as.character(.data$status),
+      years_exp = as.integer(.data$years_exp),
+      height = as.double(.data$height),
+      # A weight of 0 is a missing-data placeholder (as in CFBD /roster,
+      # decision 0009); a handful of other rows carry impossible values (e.g.
+      # 18 or 1794 lbs). Coerce anything outside a plausible NFL range to NA.
+      weight = dplyr::if_else(
+        as.integer(.data$weight) < 100 | as.integer(.data$weight) > 500,
+        NA_integer_,
+        as.integer(.data$weight)
+      ),
+      college = as.character(.data$college),
+      rookie_year = as.integer(.data$rookie_year)
+    ) |>
+    dplyr::arrange(.data$gsis_id, .data$season) |>
+    dplyr::distinct(.data$gsis_id, .data$season, .keep_all = TRUE)
+}
+
+#' Clean NFL player stats (nflverse)
+#'
+#' Aggregates the long weekly nflverse stats to the **player-season** grain,
+#' **regular season only** (decision 0014): one row per `gsis_id` × `season`
+#' with season totals for the common passing / rushing / receiving / defensive
+#' box-score categories, plus `games` (weeks with a recorded stat line — an
+#' approximation of games played, not roster games). Stat column names match
+#' [clean_nfl_draft_picks()]' career totals.
+#'
+#' @param nfl_player_stats Raw weekly tibble from [ingest_nfl_player_stats()].
+#'
+#' @return A cleaned tibble keyed by `gsis_id` and `season`.
+#' @export
+clean_nfl_player_stats <- function(nfl_player_stats) {
+  nfl_player_stats |>
+    dplyr::filter(.data$season_type == "REG", !is.na(.data$player_id)) |>
+    dplyr::group_by(
+      gsis_id = as.character(.data$player_id),
+      season = as.integer(.data$season)
+    ) |>
+    dplyr::summarise(
+      player_name = dplyr::first(.data$player_display_name),
+      games = dplyr::n_distinct(.data$week),
+      pass_completions = sum(.data$completions, na.rm = TRUE),
+      pass_attempts = sum(.data$attempts, na.rm = TRUE),
+      pass_yards = sum(.data$passing_yards, na.rm = TRUE),
+      pass_tds = sum(.data$passing_tds, na.rm = TRUE),
+      pass_ints = sum(.data$passing_interceptions, na.rm = TRUE),
+      rush_atts = sum(.data$carries, na.rm = TRUE),
+      rush_yards = sum(.data$rushing_yards, na.rm = TRUE),
+      rush_tds = sum(.data$rushing_tds, na.rm = TRUE),
+      targets = sum(.data$targets, na.rm = TRUE),
+      receptions = sum(.data$receptions, na.rm = TRUE),
+      rec_yards = sum(.data$receiving_yards, na.rm = TRUE),
+      rec_tds = sum(.data$receiving_tds, na.rm = TRUE),
+      def_solo_tackles = sum(.data$def_tackles_solo, na.rm = TRUE),
+      def_sacks = sum(.data$def_sacks, na.rm = TRUE),
+      def_ints = sum(.data$def_interceptions, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    dplyr::transmute(
+      .data$gsis_id,
+      .data$player_name,
+      .data$season,
+      games = as.integer(.data$games),
+      pass_completions = as.integer(.data$pass_completions),
+      pass_attempts = as.integer(.data$pass_attempts),
+      pass_yards = as.integer(.data$pass_yards),
+      pass_tds = as.integer(.data$pass_tds),
+      pass_ints = as.integer(.data$pass_ints),
+      rush_atts = as.integer(.data$rush_atts),
+      rush_yards = as.integer(.data$rush_yards),
+      rush_tds = as.integer(.data$rush_tds),
+      targets = as.integer(.data$targets),
+      receptions = as.integer(.data$receptions),
+      rec_yards = as.integer(.data$rec_yards),
+      rec_tds = as.integer(.data$rec_tds),
+      def_solo_tackles = as.integer(.data$def_solo_tackles),
+      def_sacks = as.double(.data$def_sacks),
+      def_ints = as.integer(.data$def_ints)
+    )
+}

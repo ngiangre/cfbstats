@@ -179,3 +179,68 @@ ingest_roster <- function(years = 2010:2026) {
   ) |>
     purrr::list_rbind()
 }
+
+# ---- NFL outcomes via nflverse (decision 0014) ------------------------------
+# These pull post-draft NFL data from nflverse (nflreadr), *not* CFBD, so they
+# take no API key. They are linked to CFBD picks by draft slot, never by the
+# CFBD `nflAthleteId` (a different id namespace; decision 0014).
+
+#' Ingest NFL draft picks (nflverse)
+#'
+#' Pulls nflverse's draft-pick table (`nflreadr::load_draft_picks()`). This is
+#' the **bridge** from CFBD `picks` to nflverse player ids (`gsis_id`,
+#' `pfr_player_id`) *and* a Pro-Football-Reference **career summary**: games,
+#' seasons started, last active season (`to`), career box-score totals, and
+#' Pro Bowl / All-Pro / Hall-of-Fame flags. Linked to CFBD `picks` by draft slot
+#' — `(year, round, overall)` == `(season, round, pick)` — the reliable key,
+#' since CFBD `nflAthleteId` is a different namespace (0/4350 recent picks match
+#' nflverse `espn_id`) and name-only matching is collision-prone (decision 0014).
+#'
+#' @param seasons Integer vector of draft seasons (default 2010:2026).
+#'
+#' @return A tibble, one row per draft pick (unique on `season`/`round`/`pick`).
+#' @export
+ingest_nfl_draft_picks <- function(seasons = 2010:2026) {
+  rlang::check_installed("nflreadr", reason = "to pull nflverse draft picks.")
+  nflreadr::load_draft_picks(seasons = as.integer(seasons))
+}
+
+#' Ingest NFL rosters (nflverse)
+#'
+#' Pulls nflverse season rosters (`nflreadr::load_rosters()`): one row per
+#' player-season on an NFL roster, keyed by `gsis_id`. This is the source for
+#' the primary longevity measure — **distinct NFL seasons on a roster** — which,
+#' unlike a stats-based definition, counts linemen / special-teamers / backups
+#' who accrue no box-score stats (decision 0014).
+#'
+#' @param seasons Integer vector of NFL seasons (default 2010:2026).
+#'
+#' @return A tibble, one row per player-season on a roster.
+#' @export
+ingest_nfl_rosters <- function(seasons = 2010:2026) {
+  rlang::check_installed("nflreadr", reason = "to pull nflverse rosters.")
+  nflreadr::load_rosters(seasons = as.integer(seasons))
+}
+
+#' Ingest NFL player stats (nflverse)
+#'
+#' Pulls nflverse **weekly** player stats (`nflreadr::load_player_stats()`) for
+#' the given seasons (regular + postseason). Returned long by player-week; the
+#' aggregation to the player-season grain (regular season only) happens in
+#' [clean_nfl_player_stats()] per the grain decision (decision 0014).
+#'
+#' Seasons in `seasons` for which nflverse stats exist are pulled; a not-yet-
+#' played season (e.g. 2026 before kickoff) is skipped, since
+#' `load_player_stats()` errors on future seasons.
+#'
+#' @param seasons Integer vector of NFL seasons (default 2010:2026).
+#'
+#' @return A wide tibble, one row per player-week (all nflverse stat columns).
+#' @export
+ingest_nfl_player_stats <- function(seasons = 2010:2026) {
+  rlang::check_installed("nflreadr", reason = "to pull nflverse player stats.")
+  seasons <- as.integer(seasons)
+  # Drop seasons that haven't been played yet (no stats to pull).
+  seasons <- seasons[seasons <= nflreadr::most_recent_season()]
+  nflreadr::load_player_stats(seasons = seasons)
+}

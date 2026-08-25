@@ -229,3 +229,61 @@ link_recruiting <- function(player_season, recruiting) {
       ))
     )
 }
+
+#' Bridge CFBD picks to nflverse ids and NFL outcomes
+#'
+#' Attaches nflverse player ids and headline NFL-career outcomes to CFBD `picks`
+#' by **draft slot** — CFBD `(year, round, overall)` == nflverse
+#' `(season, round, pick)`. This is the reliable bridge: CFBD `nflAthleteId` is a
+#' different id namespace (0 of 4,350 recent picks match nflverse `espn_id`) and
+#' name-only matching is collision-prone, whereas the slot join matched
+#' 4,350/4,350 recent picks (99.7% carrying a `pfr_player_id`); decision 0014.
+#'
+#' A [normalize_name()] guard (as in [link_recruiting()], decision 0013) nulls
+#' the attached ids/outcomes whenever the CFBD and PFR names disagree, flagged by
+#' `nfl_matched`; benign suffix/nickname differences (Will Anderson Jr. ↔ Will
+#' Anderson) pass. The nflverse table is unique per slot, so the join is
+#' many-to-one and never inflates `picks`. Picks outside the nflverse window
+#' (e.g. pre-2010) simply find no slot and stay unmatched.
+#'
+#' Longevity note (decision 0014): `nfl_to` (last active NFL season) and
+#' `nfl_games` are **right-censored** for recent draft classes still active —
+#' treat them as "≥" outcomes, not completed careers.
+#'
+#' @param picks Cleaned CFBD picks from [clean_picks()].
+#' @param nfl_draft_picks Cleaned nflverse draft picks from
+#'   [clean_nfl_draft_picks()].
+#'
+#' @return `picks` with `gsis_id`, `pfr_player_id`, `nfl_to`, `nfl_games`,
+#'   `nfl_seasons_started`, and the `nfl_matched` flag attached. Same row count
+#'   as `picks`.
+#' @export
+link_nfl_draft <- function(picks, nfl_draft_picks) {
+  lookup <- nfl_draft_picks |>
+    dplyr::transmute(
+      year = .data$season,
+      round = .data$round,
+      overall = .data$pick,
+      gsis_id = .data$gsis_id,
+      pfr_player_id = .data$pfr_player_id,
+      nfl_name = .data$pfr_player_name,
+      nfl_to = .data$to,
+      nfl_games = .data$games,
+      nfl_seasons_started = .data$seasons_started
+    )
+  picks |>
+    dplyr::left_join(lookup, by = c("year", "round", "overall")) |>
+    dplyr::mutate(
+      nfl_matched = !is.na(.data$nfl_name) &
+        normalize_name(.data$name) == normalize_name(.data$nfl_name),
+      dplyr::across(
+        c("gsis_id", "pfr_player_id"),
+        \(x) dplyr::if_else(.data$nfl_matched, x, NA_character_)
+      ),
+      dplyr::across(
+        c("nfl_to", "nfl_games", "nfl_seasons_started"),
+        \(x) dplyr::if_else(.data$nfl_matched, x, NA_integer_)
+      )
+    ) |>
+    dplyr::select(-dplyr::any_of("nfl_name"))
+}

@@ -22,6 +22,9 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
 | `data/teams.parquet` | one team (program) | join by school **name** (`team`); logos/colors, DISPLAY only (decision 0008) |
 | `data/conference_tiers.parquet` | season × conference | tier 3 Power / 2 G5 / 1 FCS-and-below (decision 0003) |
 | `data/recruiting.parquet` | one HS recruit | CFBD `athleteId`; `stars`/`rating`/`ranking`. Id is an **untrusted** namespace — join only via the name guard (decision 0013) |
+| `data/nfl_draft_picks.parquet` | one NFL draft pick | nflverse; key `(season, round, pick)`. Bridge to `gsis_id`/`pfr_player_id` + PFR career summary (decision 0014) |
+| `data/nfl_rosters.parquet` | one player-season on an NFL roster | nflverse; key `(gsis_id, season)`. Longevity source: distinct roster seasons |
+| `data/nfl_player_stats.parquet` | one player-season (regular season) | nflverse; key `(gsis_id, season)`. Weekly stats aggregated to season totals |
 
 ### Gotchas (do not ignore)
 
@@ -50,6 +53,16 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
   contract enforces a 100–500 lb range (decision 0009).
 - **Conference tiers are season-aware** (Pac-12 collapse, Big East → AAC, WAC
   dropping FBS football); use the lookup, don't hard-code.
+- **NFL outcomes bridge on draft slot, NOT `nflAthleteId`.** CFBD
+  `picks.nflAthleteId` is its own namespace (0/4,350 match nflverse `espn_id`).
+  Link CFBD picks to nflverse via `link_nfl_draft()` — draft slot
+  `(year, round, overall)` == `(season, round, pick)` — behind a name guard;
+  `gsis_id` is then the key across `nfl_rosters`/`nfl_player_stats`. NFL data is
+  an **outcome/label**, kept off the model input path (leakage). "How long they
+  last" = distinct roster seasons (primary), plus career games / last season;
+  **right-censored** for recent classes. `load_player_stats()` errors on a
+  future season, so its ingest clamps to `<= most_recent_season()` (no 2026
+  stats yet). nflverse needs **no API key** (decision 0014).
 - **Recruiting `athleteId` is NOT the shared namespace.** Unlike
   `collegeAthleteId`/`roster.id`, the `/recruiting/players` `athleteId` collides
   across different people (e.g. Cam Ward's id → a different recruit, Xavier

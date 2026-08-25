@@ -6,6 +6,28 @@ layer, and the documentation site, all under version control.
 
 ## Pipeline & data
 
+- Added **NFL outcomes for drafted players** from nflverse (`nflreadr`) as three
+  first-class tables (`ingest_nfl_*()` → `clean_nfl_*()`, published on the
+  `data-latest` release): `nfl_draft_picks` (the bridge + Pro-Football-Reference
+  career summary), `nfl_rosters` (player-season roster presence — the longevity
+  source), and `nfl_player_stats` (weekly stats aggregated to the player-season
+  grain, regular season). `link_nfl_draft()` bridges CFBD `picks` to nflverse
+  ids by **draft slot** — `(year, round, overall)` == `(season, round, pick)` —
+  behind a normalized-name guard, because CFBD `nflAthleteId` is a *different*
+  namespace (0 of 4,350 recent picks match nflverse `espn_id`) and name-only
+  matching is collision-prone; the slot join matches ~97% of 2010+ picks after
+  the guard. "How long they last" is defined primarily as **distinct NFL seasons
+  on a roster**, complemented by career games and last active season — all
+  **right-censored** for recent classes still active, so treat them as "≥"
+  outcomes. NFL data is an *outcome/label* source, kept off the model input path
+  (feeding it as a feature would be leakage). Enforcing the roster contract
+  surfaced impossible weights (0/18/449/1794 lbs) coerced to `NA` (mirroring the
+  CFBD roster placeholder handling), and 16 unattributed stat rows with a null
+  `player_id` dropped. Guarded by `contract_nfl_draft_picks()` /
+  `contract_nfl_rosters()` / `contract_nfl_player_stats()` / `contract_nfl_link()`,
+  data dictionaries (`inst/dict/nfl_*.yml`, dict-parity test), and
+  `tests/testthat/test-nfl.R`.
+  See [decision 0014](https://github.com/ngiangre/cfbstats/blob/main/decisions/0014-nfl-outcomes-nflverse-link.md).
 - Added **high-school recruiting ratings** as a first-class table
   (`ingest_recruiting()` → `data/recruiting.parquet`, published on the
   `data-latest` release): CFBD `stars`/`rating`/`ranking` per recruit.
@@ -78,6 +100,13 @@ layer, and the documentation site, all under version control.
 
 ## Documentation site
 
+- Added an **NFL-outcomes exemplar** to the Explore page: `viz_nfl_roster_seasons_by_round()`
+  plots career length (distinct seasons on an NFL roster) by draft round with the
+  #1 overall picks highlighted against the field, noting the right-censoring of
+  recent classes. The vision/question and data-source pages (`VISION.md`,
+  `README.md`, `about`/`data`/`pipeline` vignettes) now cover the post-draft NFL
+  question and the three nflverse tables.
+  See [decision 0014](https://github.com/ngiangre/cfbstats/blob/main/decisions/0014-nfl-outcomes-nflverse-link.md).
 - `altdoc` + Quarto website built to `docs/` and deployed to GitHub Pages;
   vignettes read the pipeline via `tar_read()`.
   See [decision 0006](https://github.com/ngiangre/cfbstats/blob/main/decisions/0006-quarto-site-architecture-and-viz.md).
