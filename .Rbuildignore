@@ -24,3 +24,4 @@
 ^_freeze$
 ^\.quarto$
 ^_quarto$
+^\.githooks$

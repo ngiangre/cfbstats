@@ -28,6 +28,7 @@ Suggests:
     arrow,
     gert,
     ggiraph,
+    ggpath,
     ggplot2,
     htmltools,
     httr2,

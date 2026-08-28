@@ -18,5 +18,11 @@ utils::globalVariables(c(
   "coach_id",
   "school",
   "weight",
-  "team"
+  "team",
+  "drafted",
+  "gsis_id",
+  "pick",
+  "nfl_matched",
+  "who",
+  "stage"
 ))

@@ -2,13 +2,15 @@
 % Please edit documentation in R/viz.R
 \name{viz_theme}
 \alias{viz_theme}
-\title{Shared ggplot2 theme}
+\title{Shared ggplot2 theme (retained alias)}
 \usage{
 viz_theme()
 }
 \value{
-A ggplot2 theme object (falls back silently if ggplot2 is absent).
+A ggplot2 theme object.
 }
 \description{
-Shared ggplot2 theme
+Backward-compatible alias that delegates to \code{\link[=theme_cfbstats]{theme_cfbstats()}} so existing
+figures pick up the accessible-font standard. Prefer \code{\link[=theme_cfbstats]{theme_cfbstats()}} in
+new code.
 }

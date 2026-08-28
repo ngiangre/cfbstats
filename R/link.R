@@ -230,6 +230,96 @@ link_recruiting <- function(player_season, recruiting) {
     )
 }
 
+#' Assemble a player's college-through-NFL trajectory spine
+#'
+#' For a small registry of subjects, builds one row per player-season across
+#' both stages (college roster + NFL roster) and attaches a **data-backed draft
+#' status**. Draft status keys on the reliable nflverse `gsis_id`: presence in
+#' `nfl_draft_picks` means drafted (with the draft year/round/overall attached),
+#' absence means the player entered the NFL undrafted. Because `gsis_id` is
+#' nflverse's own namespace shared by both the subject registry and the draft
+#' table, this join needs no name guard (unlike the CFBD-side bridges in
+#' [link_nfl_draft()] / [link_recruiting()]).
+#'
+#' The source tables may be lazy `arrow` Datasets (the published
+#' `data/*.parquet`, read on their **raw** schema — `roster` uses `id`, NFL
+#' tables use `gsis_id`) or in-memory tibbles; the pipeline runs the same dplyr
+#' verbs over either and `collect()`s at the end. This encapsulates the data
+#' pull a blog post would otherwise inline (decision 0015).
+#'
+#' @param subjects A registry tibble with `who` (display name), `cfb_athlete_id`
+#'   (CFBD athlete id, string), and `gsis_id` (nflverse id, string).
+#' @param roster College roster source (raw `data/roster.parquet` schema: `id`,
+#'   `season`, `team`).
+#' @param nfl_rosters NFL roster source (raw `data/nfl_rosters.parquet` schema:
+#'   `gsis_id`, `season`, `team`).
+#' @param nfl_draft_picks NFL draft-pick source (raw
+#'   `data/nfl_draft_picks.parquet` schema: `gsis_id`, `season`, `round`,
+#'   `pick`). Lists drafted players only.
+#'
+#' @return A tibble, one row per subject player-season, with `who`,
+#'   `cfb_athlete_id`, `season`, `team`, `stage` (`"College"`/`"NFL"`),
+#'   `drafted` (logical), and `draft_year`/`draft_round`/`draft_overall`
+#'   (`NA` for undrafted players), arranged by `who` then `season`.
+#' @export
+player_trajectory <- function(subjects, roster, nfl_rosters, nfl_draft_picks) {
+  stopifnot(
+    all(c("who", "cfb_athlete_id", "gsis_id") %in% names(subjects))
+  )
+  cfb_ids <- subjects$cfb_athlete_id
+  gsis_ids <- subjects$gsis_id
+
+  college <- roster |>
+    dplyr::filter(.data$id %in% cfb_ids) |>
+    dplyr::select(cfb_athlete_id = "id", "season", "team") |>
+    dplyr::collect() |>
+    dplyr::mutate(stage = "College")
+
+  nfl <- nfl_rosters |>
+    dplyr::filter(.data$gsis_id %in% gsis_ids) |>
+    dplyr::distinct(.data$gsis_id, .data$season, .data$team) |>
+    dplyr::collect() |>
+    dplyr::left_join(
+      dplyr::select(subjects, "gsis_id", "cfb_athlete_id"),
+      by = "gsis_id"
+    ) |>
+    dplyr::select("cfb_athlete_id", "season", "team") |>
+    dplyr::mutate(stage = "NFL")
+
+  # Drafted iff the nflverse gsis_id appears in the draft-pick table; collapse
+  # to one row per player (a player is drafted at most once).
+  draft_status <- nfl_draft_picks |>
+    dplyr::filter(.data$gsis_id %in% gsis_ids) |>
+    dplyr::select(
+      "gsis_id",
+      draft_year = "season",
+      draft_round = "round",
+      draft_overall = "pick"
+    ) |>
+    dplyr::collect() |>
+    dplyr::distinct(.data$gsis_id, .keep_all = TRUE) |>
+    dplyr::right_join(
+      dplyr::select(subjects, "cfb_athlete_id", "gsis_id"),
+      by = "gsis_id"
+    ) |>
+    dplyr::mutate(drafted = !is.na(.data$draft_year)) |>
+    dplyr::select(
+      "cfb_athlete_id",
+      "drafted",
+      "draft_year",
+      "draft_round",
+      "draft_overall"
+    )
+
+  dplyr::bind_rows(college, nfl) |>
+    dplyr::left_join(
+      dplyr::select(subjects, "who", "cfb_athlete_id"),
+      by = "cfb_athlete_id"
+    ) |>
+    dplyr::left_join(draft_status, by = "cfb_athlete_id") |>
+    dplyr::arrange(.data$who, .data$season)
+}
+
 #' Bridge CFBD picks to nflverse ids and NFL outcomes
 #'
 #' Attaches nflverse player ids and headline NFL-career outcomes to CFBD `picks`
