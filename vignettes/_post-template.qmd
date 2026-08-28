@@ -1,0 +1,69 @@
+---
+# Blog post template (decision 0015). Copy to vignettes/YYYY-MM-DD-slug.qmd.
+# The leading underscore keeps Quarto from rendering this template as a page.
+title: "TITLE — a short, human headline"
+date: "YYYY-MM-DD"
+# freeze: true pins this post as a point-in-time artifact: once its _freeze/
+# entry is committed, a data refresh never re-executes it. To refresh on
+# purpose, edit the post (or delete its _freeze entry) deliberately.
+freeze: true
+vignette: >
+  %\VignetteIndexEntry{TITLE — a short, human headline}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(cfbstats)
+library(dplyr)
+library(targets)
+# altdoc renders in a temp dir; point the knit wd at the project root so
+# tar_read() and system.file() resolve (set by CFBSTATS_ROOT in CI/site build).
+root <- Sys.getenv("CFBSTATS_ROOT")
+if (nzchar(root)) knitr::opts_knit$set(root.dir = root)
+```
+
+```{r}
+#| label: registry
+#| include: false
+# Standard: key on athlete id, never name (recruiting ids collide — decision
+# 0013). Declare every subject's ids here so the prose below never hard-codes a
+# name-based lookup.
+subjects <- tibble::tribble(
+  ~who,          ~cfb_athlete_id, ~gsis_id,
+  "Example One", "0000000",       "00-0000000"
+)
+```
+
+::: {.callout-note appearance="minimal"}
+*Data as of the `data-latest` release, retrieved YYYY-MM-DD. Careers of recent
+classes are right-censored — later seasons may not yet be present.*
+:::
+
+<!-- Opening hook: why this post, why now. One or two paragraphs. -->
+
+## The data spine
+
+<!--
+Prefer a tested package helper (e.g. player_trajectory()) over ad-hoc parquet
+reads, so a silent join change fails a unit test rather than a reader. Guard
+every query so a broken pull errors at authoring time, before this post is
+frozen.
+-->
+
+```{r}
+#| label: build-spine
+# Example: pull each subject's trajectory by id, then assert non-empty.
+# spine <- purrr::map_dfr(subjects$cfb_athlete_id, player_trajectory)
+# stopifnot(nrow(spine) > 0)
+```
+
+## Section
+
+<!-- Body sections. Reference figures/tables produced inline in chunks above. -->
+
+## Where they are now
+
+<!-- Closing reflection. State any data caveats explicitly (gaps, censoring). -->

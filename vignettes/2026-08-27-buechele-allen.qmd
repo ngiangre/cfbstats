@@ -1,0 +1,201 @@
+---
+title: "Welcome to the NFL Preseason! Let's look at key players fighting to to start"
+date: "2026-08-27"
+author:
+  - "Nick Giangreco"
+freeze: true
+vignette: >
+  %\VignetteIndexEntry{Welcome to the NFL Preseason! Let's look at key players fighting to to start}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(cfbstats)
+library(arrow)
+library(dplyr)
+library(ggplot2)
+library(ggiraph)
+library(ggpath)
+library(knitr)
+# altdoc renders in a temp dir; point the knit wd at the project root so
+# data/*.parquet and tar_read() resolve (CFBSTATS_ROOT is set in the site build).
+root <- Sys.getenv("CFBSTATS_ROOT")
+if (nzchar(root)) {
+  knitr::opts_knit$set(root.dir = root)
+}
+
+# Accessible, consistent interactivity for every girafe figure in this post:
+# a clear (non-yellow) hover pop, dimming of non-hovered marks, a dark tooltip,
+# and toolbar zoom + PNG download.
+set_girafe_defaults(
+  opts_hover = opts_hover(
+    css = "stroke:#111827;stroke-width:2.5px;filter:brightness(1.12);"
+  ),
+  opts_hover_inv = opts_hover_inv(css = "opacity:0.45;"),
+  opts_tooltip = opts_tooltip(
+    css = "background:#111827;color:#fff;padding:6px 9px;border-radius:5px;font-weight:bold;font-size:15px;"
+  ),
+  opts_zoom = opts_zoom(min = 1, max = 5),
+  opts_toolbar = opts_toolbar(saveaspng = TRUE, position = "topright"),
+  opts_sizing = opts_sizing(rescale = TRUE)
+)
+```
+
+```{r}
+#| label: registry
+#| include: false
+# Standard: key on athlete id, never name (recruiting ids collide, decision 0013).
+# NOTE: this post reads parquet inline for now. Follow-up (decision 0015): move
+# this data pull into a tested player_trajectory() helper in R/ and call it here.
+subjects <- tibble::tribble(
+  ~who             , ~cfb_athlete_id , ~gsis_id     ,
+  "Shane Buechele" , "4039034"       , "00-0036679" ,
+  "Kyle Allen"     , "559681"        , "00-0034577"
+)
+```
+
+::: {.callout-important appearance="simple"}
+This is the first blog post of this website! Please bear with us as we get our bearings and set things up. But I couldn't resist starting to look at some football data!
+:::
+
+::: {.callout-note appearance="minimal"}
+*Data as of the `data-latest` release, retrieved 2026-08-27. Both players' NFL
+careers are ongoing, so late seasons reflect roster presence in the current
+data and may extend further.*
+:::
+
+I am a Buffalo Bills fan. I'll admit, I do not watch as many games as I should. However, I always cheer on the Bills from afar: celebrating their victories, hoping for the best following losses, and wishing them well as the team grows and does good in the Buffalo community. I am just a lowly data scientist, who rather explore data than watch football on TV. 
+
+Previous data projects I have done included investigating NFL data exclusively, but this project intends to look at player's trajectories through their college career, the NFL draft, and their NFL career. While this is a large endeavor, this website is dedicated for achieving that objective over time. I am also looking forward to seeing improvement in my communication and data storytelling. 
+
+In that spirit, I want to start investigating players playing tonight in the home-opener preseason game between the Buffalo Bills and Pittsburgh Steelers. Specifically, Shane Buechele who is starting and Kyle Allen who is also vying for the QB2 position right behind Josh Allen. 
+
+## Origins of Shane Buechele and Kyle Allen
+
+```{r}
+#| label: recruiting-origins
+open_dataset("data/recruiting.parquet") |>
+  filter(athleteId %in% subjects$cfb_athlete_id) |>
+  select(
+    athleteId,
+    name,
+    year,
+    committedTo,
+    stars,
+    rating,
+    ranking,
+    city,
+    stateProvince
+  ) |>
+  collect() |>
+  arrange(desc(stars)) |>
+  kable(caption = "High-school recruiting profiles (CFBD).")
+```
+
+Unfortunately, I'm not very well versed in high school football rating. But at first glance it looks like Kyle Allen was a more promising prospect early in his career compared to Shane Buechele.
+
+## Teams of Shane Buechele and Kyle Allen
+
+Let's see where they went to where they are now:
+
+```{r}
+#| label: build-spine
+#| include: false
+# Assemble the college->NFL spine (one row per player-season) with a
+# data-backed draft status, keyed on athlete/gsis ids (decision 0015). Reads the
+# published parquet on its raw schema; draft status comes from nfl_draft_picks.
+spine <- player_trajectory(
+  subjects,
+  roster = open_dataset("data/roster.parquet"),
+  nfl_rosters = open_dataset("data/nfl_rosters.parquet"),
+  nfl_draft_picks = open_dataset("data/nfl_draft_picks.parquet")
+)
+
+# Guard the spine before display enrichment: non-null who/team/stage, stage in
+# {College, NFL}, complete logical `drafted` (decision 0005).
+contract_player_trajectory(spine)
+
+# Team brand colors + logos (display only, decision 0008). College teams come
+# from teams.parquet; NFL clubs from nflverse, since teams.parquet is college
+# only. `logo` columns are ESPN/CFBD image URLs.
+#
+# Pick the logo variant with better contrast on each tile from its luminance:
+# dark tiles get the light ("dark-background") logo, light tiles the standard
+# one. CFBD's columns are logo_light (/logos/, for light bg) and logo_dark
+# (/logos-dark/, for dark bg) — counter-intuitive, so key off luminance, not name.
+rel_lum <- function(hex) {
+  ok <- grepl("^#[0-9A-Fa-f]{6}$", hex)
+  out <- rep(NA_real_, length(hex))
+  if (any(ok)) {
+    m <- grDevices::col2rgb(hex[ok]) / 255
+    lin <- ifelse(m <= 0.03928, m / 12.92, ((m + 0.055) / 1.055)^2.4)
+    out[ok] <- 0.2126 * lin[1, ] + 0.7152 * lin[2, ] + 0.0722 * lin[3, ]
+  }
+  out
+}
+college_meta <- open_dataset("data/teams.parquet") |>
+  select(school, color, logo_light, logo_dark) |>
+  collect() |>
+  transmute(
+    team = school,
+    name = school,
+    color,
+    logo = if_else(
+      !is.na(rel_lum(color)) & rel_lum(color) < 0.5,
+      logo_dark,
+      logo_light
+    )
+  )
+nfl_meta <- nflreadr::load_teams(current = FALSE) |>
+  transmute(
+    team = team_abbr,
+    name = team_name,
+    color = team_color,
+    logo = team_logo_espn
+  )
+team_lookup <- bind_rows(college_meta, nfl_meta) |>
+  distinct(team, .keep_all = TRUE)
+
+spine <- spine |>
+  left_join(team_lookup, by = "team") |>
+  mutate(tooltip = paste0(name, " · ", season))
+
+# Fail loudly at authoring time, before the post is frozen (decision 0015).
+stopifnot(
+  nrow(spine) > 0,
+  all(subjects$who %in% spine$who),
+  !anyNA(spine$color),
+  !anyNA(spine$logo),
+  # The caption's "neither was drafted" claim, backed by the draft-pick table:
+  # fail the build if either player ever appears among drafted picks.
+  !any(spine$drafted)
+)
+```
+
+```{r}
+#| label: fig-timeline
+#| fig-cap: "Team by season, college through the NFL, in each team's brand colors and logos. Hover any tile for the team and season. Neither player appears in the NFL draft-pick records — both entered undrafted."
+p <- ggplot(spine, aes(x = season, y = who)) +
+  geom_tile_interactive(
+    aes(fill = color, tooltip = tooltip, data_id = paste(who, season)),
+    color = "white",
+    height = 0.7
+  ) +
+  geom_from_path(aes(path = logo), height = 0.11) +
+  scale_fill_identity() +
+  scale_x_continuous(breaks = seq(min(spine$season), max(spine$season), 1)) +
+  labs(x = NULL, y = NULL) +
+  theme_cfbstats(base_size = 14) +
+  theme(panel.grid = element_blank(), legend.position = "none")
+girafe(ggobj = p, width_svg = 9, height_svg = 3.5)
+```
+
+Both players have had a pretty good run in alot of good teams! Interestingly, what this figure doesn't tell you is that both players were not in the NFL draft. Both were free agents and picked up by NFL teams. This was seen when neither players have data records in the draft data. 
+
+## Good luck to Shane Buechele and Kyle Allen!
+
+There's so much more to look into, like how much they played, their statistics when they played, their injuries, et cetera. But, alas, that will be for another day after much thinking with my partner. But this short post was a great look into some of the data and a type of visualization of these player's trajectory!
+

@@ -100,6 +100,19 @@ layer, and the documentation site, all under version control.
 
 ## Documentation site
 
+- Added `player_trajectory()` — assembles a subject registry's college→NFL
+  spine (one row per player-season across both stages) with a **data-backed
+  draft status** keyed on the nflverse `gsis_id` (presence in `nfl_draft_picks`
+  ⇒ drafted; absence ⇒ undrafted, no name guard needed since both sides share
+  nflverse's id namespace). The first blog post
+  (`vignettes/2026-08-27-buechele-allen.qmd`) now calls it instead of inlining
+  the parquet pull, and its timeline caption's "neither player was drafted"
+  claim is enforced at author time (`stopifnot(!any(spine$drafted))`) rather
+  than asserted in prose. `contract_player_trajectory()` guards the output
+  (non-null `who`/`team`/`stage`, `stage` in `{College, NFL}`, complete logical
+  `drafted`). Covered by `tests/testthat/test-link.R` and
+  `tests/testthat/test-contracts.R`.
+  See [decision 0015](https://github.com/ngiangre/cfbstats/blob/main/decisions/0015-blog-post-conventions-and-build-robustness.md).
 - Added an **NFL-outcomes exemplar** to the Explore page: `viz_nfl_roster_seasons_by_round()`
   plots career length (distinct seasons on an NFL roster) by draft round with the
   #1 overall picks highlighted against the field, noting the right-censoring of

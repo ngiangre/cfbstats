@@ -73,6 +73,34 @@ test_that("contract_drafted flags a fanned-out draft-outcome join", {
   expect_false(pointblank::all_passed(agent))
 })
 
+test_that("contract_player_trajectory passes a complete spine", {
+  skip_if_not_installed("pointblank")
+  spine <- tibble::tibble(
+    who = c("A", "A", "B"),
+    cfb_athlete_id = c("1", "1", "2"),
+    season = c(2015L, 2018L, 2016L),
+    team = c("Texas", "KC", "Texas A&M"),
+    stage = c("College", "NFL", "College"),
+    drafted = c(TRUE, TRUE, FALSE)
+  )
+  agent <- contract_player_trajectory(spine, stop_on_fail = FALSE)
+  expect_true(pointblank::all_passed(agent))
+})
+
+test_that("contract_player_trajectory flags a null who/team/stage", {
+  skip_if_not_installed("pointblank")
+  spine <- tibble::tibble(
+    who = c("A", NA_character_),
+    cfb_athlete_id = c("1", "2"),
+    season = c(2015L, 2018L),
+    team = c("Texas", "KC"),
+    stage = c("College", "NFL"),
+    drafted = c(TRUE, FALSE)
+  )
+  agent <- contract_player_trajectory(spine, stop_on_fail = FALSE)
+  expect_false(pointblank::all_passed(agent))
+})
+
 test_that("contract_conference_tiers flags an unmapped conference", {
   skip_if_not_installed("pointblank")
   tiers <- tibble::tibble(

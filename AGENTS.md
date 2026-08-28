@@ -109,6 +109,16 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
   `system.file("dict", ...)`, so the package must be installed to render. Viz is
   hybrid: R htmlwidgets default (`plotly`/`ggiraph`/`reactable`), OJS later.
   `vignettes/` is `.Rbuildignore`d (they need the pipeline/data, not CRAN).
+- **Figure styling standard.** Leverage **team colors consistently** across
+  figures (source them from `data/teams.parquet`, which carries logos/colors —
+  DISPLAY only, decision 0008 — via a shared team → color mapping, not
+  hard-coded hexes). All figures use **large, accessible fonts/text**. Save a
+  **reusable ggplot2 theme object** (plus the team color scale) in `R/viz.R` and
+  apply it everywhere rather than re-theming per plot. TODO: create that theme
+  helper.
+- **Blog posts** (decision 0015): dated files `vignettes/YYYY-MM-DD-slug.qmd`,
+  `freeze: true` + committed `_freeze/` so they don't rebreak on data refresh;
+  key on athlete id; start from `vignettes/_post-template.qmd`.
 - **CI** (`.github/workflows/`): `check.yaml` (R CMD check + testthat + contract
   fixtures), `site.yaml` (pull data release asset → `tar_make()` → render →
   Pages), `data-refresh.yaml` (scheduled ingest → publish parquet via

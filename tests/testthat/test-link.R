@@ -45,6 +45,54 @@ test_that("link_drafted does not attribute a pre-window collision pick", {
   expect_true(is.na(out$draft_year))
 })
 
+test_that("player_trajectory assembles both stages and marks undrafted", {
+  subjects <- tibble::tibble(
+    who = c("Drafted Player", "Undrafted Player"),
+    cfb_athlete_id = c("100", "200"),
+    gsis_id = c("00-d", "00-u")
+  )
+  roster <- tibble::tibble(
+    id = c("100", "200", "999"),
+    season = c(2015L, 2016L, 2015L),
+    team = c("Texas", "Texas A&M", "Other")
+  )
+  nfl_rosters <- tibble::tibble(
+    gsis_id = c("00-d", "00-d", "00-u"),
+    season = c(2018L, 2019L, 2021L),
+    team = c("KC", "KC", "BUF")
+  )
+  nfl_draft_picks <- tibble::tibble(
+    gsis_id = "00-d",
+    season = 2018L,
+    round = 3L,
+    pick = 90L
+  )
+
+  out <- player_trajectory(subjects, roster, nfl_rosters, nfl_draft_picks)
+
+  # Only subject ids; college + distinct NFL seasons (2 subjects: 1+2 and 1+1).
+  expect_equal(nrow(out), 5L)
+  expect_setequal(out$who, c("Drafted Player", "Undrafted Player"))
+  expect_setequal(unique(out$stage), c("College", "NFL"))
+
+  # Draft status is derived from the pick table, not asserted.
+  drafted <- out[out$who == "Drafted Player", ]
+  expect_true(all(drafted$drafted))
+  expect_equal(unique(drafted$draft_year), 2018L)
+  expect_equal(unique(drafted$draft_overall), 90L)
+
+  undrafted <- out[out$who == "Undrafted Player", ]
+  expect_false(any(undrafted$drafted))
+  expect_true(all(is.na(undrafted$draft_year)))
+})
+
+test_that("player_trajectory errors when the registry lacks required keys", {
+  bad <- tibble::tibble(who = "X", cfb_athlete_id = "1")
+  expect_error(
+    player_trajectory(bad, tibble::tibble(), tibble::tibble(), tibble::tibble())
+  )
+})
+
 test_that("link_drafted accepts a following-spring (2026) draft", {
   ps <- tibble::tibble(playerId = "1", season = 2025L, team = "Georgia")
   picks <- tibble::tibble(

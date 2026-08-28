@@ -373,3 +373,27 @@ contract_nfl_link <- function(picks_nfl, picks, stop_on_fail = TRUE) {
     pointblank::interrogate()
   enforce_contract(agent, "nfl_link", stop_on_fail)
 }
+
+#' Data contract for the college->NFL trajectory spine
+#'
+#' Guards [player_trajectory()] output: every spine row must carry a resolved
+#' player (`who`), `team`, and `stage` — a null in any of these means a subject
+#' id failed to join to a name or a roster row, which would silently break the
+#' timeline figure and its caption. `stage` is also constrained to the two
+#' expected values, and `drafted` must be a complete logical.
+#'
+#' @param spine Trajectory spine (see [player_trajectory()]).
+#' @param stop_on_fail Abort on failure (default `TRUE`)?
+#' @return The interrogated pointblank agent, invisibly.
+#' @export
+contract_player_trajectory <- function(spine, stop_on_fail = TRUE) {
+  rlang::check_installed("pointblank")
+  agent <- pointblank::create_agent(spine, label = "player_trajectory") |>
+    pointblank::col_exists(c("who", "team", "stage", "season", "drafted")) |>
+    pointblank::col_vals_not_null(pointblank::vars(who, team, stage)) |>
+    pointblank::col_vals_in_set("stage", c("College", "NFL")) |>
+    pointblank::col_is_logical(pointblank::vars(drafted)) |>
+    pointblank::col_vals_not_null(pointblank::vars(drafted)) |>
+    pointblank::interrogate()
+  enforce_contract(agent, "player_trajectory", stop_on_fail)
+}
