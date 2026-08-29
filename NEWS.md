@@ -6,6 +6,18 @@ layer, and the documentation site, all under version control.
 
 ## Pipeline & data
 
+- **The `targets` pipeline now owns ingest → process → assets** (decision 0017).
+  A single `tar_make()` in **refresh mode** (`CFBSTATS_REFRESH=true`) ingests
+  every source — including `conference_tiers`, now derived in-pipeline from the
+  ingested `player_stats` by the new `build_conference_tiers()` — processes it,
+  and writes every data asset (raw parquet **and** `cfbstats.duckdb`) in one
+  dependency-ordered pass. Ingestion is env-gated via `parquet_asset()`: refresh
+  mode writes the parquet, the default **track mode** reads the
+  committed/downloaded file with no API key (how the keyless site build runs).
+  `data-raw/refresh.R` is now a thin wrapper and `data-raw/conference_tiers.R`
+  is removed; the `data-refresh` workflow is a single `tar_make()` +
+  publish-assets. See [decision 0017](https://github.com/ngiangre/cfbstats/blob/main/decisions/0017-pipeline-owns-ingest-and-assets.md).
+
 - Added a **queryable DuckDB data asset** (`data/cfbstats.duckdb`) that bundles
   every cleaned, contract-checked table into one SQL-queryable file, built by the
   new `build_duckdb()` (`R/duckdb.R`) as the `duckdb_file` pipeline target

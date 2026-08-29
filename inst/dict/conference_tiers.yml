@@ -1,5 +1,5 @@
 dataset: conference_tiers
-source: package-maintained lookup (data-raw/conference_tiers.R)
+source: derived in-pipeline from player_stats by build_conference_tiers() (decision 0017)
 grain: one (season, conference) pair
 key: (season, conference)
 description: >

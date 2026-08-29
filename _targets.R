@@ -18,36 +18,89 @@ tar_option_set(
 targets::tar_source()
 
 list(
-  # ---- ingest: track committed raw files, then read them --------------------
-  tar_target(picks_file, "data/picks.parquet", format = "file"),
-  tar_target(player_stats_file, "data/player_stats.parquet", format = "file"),
-  tar_target(coaches_file, "data/coaches.parquet", format = "file"),
-  tar_target(teams_file, "data/teams.parquet", format = "file"),
-  tar_target(tiers_file, "data/conference_tiers.parquet", format = "file"),
-  tar_target(roster_file, "data/roster.parquet", format = "file"),
-  tar_target(recruiting_file, "data/recruiting.parquet", format = "file"),
-  # NFL outcomes via nflverse (decision 0014).
+  # ---- ingest -> raw parquet assets (decision 0017) -------------------------
+  # In refresh mode (CFBSTATS_REFRESH=true) parquet_asset() ingests from
+  # CFBD/nflverse and WRITES the raw parquet; otherwise it tracks the existing
+  # committed/downloaded file (no API key). `cue = always` so a local re-refresh
+  # always re-ingests; in track mode the command just returns the path (cheap)
+  # and downstream rebuilds only on an actual file-hash change. The site build
+  # runs in track mode.
+  tar_target(
+    picks_file,
+    parquet_asset("data/picks.parquet", ingest_picks),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(
+    player_stats_file,
+    parquet_asset("data/player_stats.parquet", ingest_player_stats),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(
+    coaches_file,
+    parquet_asset("data/coaches.parquet", ingest_coaches),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(
+    teams_file,
+    parquet_asset("data/teams.parquet", ingest_teams),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(
+    roster_file,
+    parquet_asset("data/roster.parquet", ingest_roster),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(
+    recruiting_file,
+    parquet_asset("data/recruiting.parquet", ingest_recruiting),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  # NFL outcomes via nflverse (decision 0014); no CFBD key required to ingest.
   tar_target(
     nfl_draft_picks_file,
-    "data/nfl_draft_picks.parquet",
-    format = "file"
+    parquet_asset("data/nfl_draft_picks.parquet", ingest_nfl_draft_picks),
+    format = "file",
+    cue = tar_cue(mode = "always")
   ),
-  tar_target(nfl_rosters_file, "data/nfl_rosters.parquet", format = "file"),
+  tar_target(
+    nfl_rosters_file,
+    parquet_asset("data/nfl_rosters.parquet", ingest_nfl_rosters),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
   tar_target(
     nfl_player_stats_file,
-    "data/nfl_player_stats.parquet",
-    format = "file"
+    parquet_asset("data/nfl_player_stats.parquet", ingest_nfl_player_stats),
+    format = "file",
+    cue = tar_cue(mode = "always")
   ),
   tar_target(raw_picks, arrow::read_parquet(picks_file)),
   tar_target(raw_player_stats, arrow::read_parquet(player_stats_file)),
   tar_target(raw_coaches, arrow::read_parquet(coaches_file)),
   tar_target(raw_teams, arrow::read_parquet(teams_file)),
-  tar_target(tiers, arrow::read_parquet(tiers_file)),
   tar_target(raw_roster, arrow::read_parquet(roster_file)),
   tar_target(raw_recruiting, arrow::read_parquet(recruiting_file)),
   tar_target(raw_nfl_draft_picks, arrow::read_parquet(nfl_draft_picks_file)),
   tar_target(raw_nfl_rosters, arrow::read_parquet(nfl_rosters_file)),
   tar_target(raw_nfl_player_stats, arrow::read_parquet(nfl_player_stats_file)),
+  # conference_tiers is derived in-pipeline from the ingested player_stats
+  # (decision 0017): its own parquet asset in refresh mode, else tracked.
+  tar_target(
+    tiers_file,
+    parquet_asset(
+      "data/conference_tiers.parquet",
+      function() build_conference_tiers(raw_player_stats)
+    ),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(tiers, arrow::read_parquet(tiers_file)),
 
   # ---- clean ----------------------------------------------------------------
   tar_target(picks, clean_picks(raw_picks)),
