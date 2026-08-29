@@ -17,6 +17,8 @@ jobs:
     env:
       CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      # Refresh mode: the pipeline ingests fresh and writes every asset (dec 0017).
+      CFBSTATS_REFRESH: "true"
     steps:
       - uses: actions/checkout@v4
 
@@ -29,9 +31,12 @@ jobs:
           extra-packages: |
             local::.
             any::piggyback
+            any::duckdb
 
-      - name: Ingest CFBD data
-        run: Rscript data-raw/refresh.R
+      # One pass: ingest (incl. conference_tiers) -> process -> write every raw
+      # parquet and the DuckDB bundle, all as targets (decision 0017).
+      - name: Ingest, process, and bundle all data
+        run: Rscript -e 'targets::tar_make()'
 
       # pb_upload requires the release to already exist, so create the
       # data-latest release on first run before uploading the parquet assets.
@@ -41,5 +46,6 @@ jobs:
             repo <- Sys.getenv("GITHUB_REPOSITORY")
             tags <- tryCatch(piggyback::pb_releases(repo)$tag_name, error = function(e) character())
             if (!"data-latest" %in% tags) piggyback::pb_release_create(repo, tag = "data-latest")
-            piggyback::pb_upload(list.files("data", pattern = "\\.parquet$", full.names = TRUE), repo = repo, tag = "data-latest")
+            # Publish the parquet tables and the bundled DuckDB file (decision 0016).
+            piggyback::pb_upload(list.files("data", pattern = "\\.(parquet|duckdb)$", full.names = TRUE), repo = repo, tag = "data-latest")
           '

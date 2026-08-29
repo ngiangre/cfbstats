@@ -6,6 +6,39 @@ layer, and the documentation site, all under version control.
 
 ## Pipeline & data
 
+- **Published parquet are now the cleaned tables** (decision 0018), so the
+  `data/*.parquet` assets, the DuckDB bundle, and the data dictionaries all carry
+  one identical schema per table. Ingest (`raw_*`) now happens in memory in
+  refresh mode only; each `<table>_file` target writes the *cleaned* parquet and
+  `<table>` reads it back, making the cleaned parquet the single source of truth
+  downstream. Track-mode builds read the cleaned parquet directly (no re-clean,
+  no key). See [decision 0018](https://github.com/ngiangre/cfbstats/blob/main/decisions/0018-cleaned-parquet-assets.md).
+
+- **The `targets` pipeline now owns ingest → process → assets** (decision 0017).
+  A single `tar_make()` in **refresh mode** (`CFBSTATS_REFRESH=true`) ingests
+  every source — including `conference_tiers`, now derived in-pipeline from the
+  ingested `player_stats` by the new `build_conference_tiers()` — processes it,
+  and writes every data asset (raw parquet **and** `cfbstats.duckdb`) in one
+  dependency-ordered pass. Ingestion is env-gated via `parquet_asset()`: refresh
+  mode writes the parquet, the default **track mode** reads the
+  committed/downloaded file with no API key (how the keyless site build runs).
+  `data-raw/refresh.R` is now a thin wrapper and `data-raw/conference_tiers.R`
+  is removed; the `data-refresh` workflow is a single `tar_make()` +
+  publish-assets. See [decision 0017](https://github.com/ngiangre/cfbstats/blob/main/decisions/0017-pipeline-owns-ingest-and-assets.md).
+
+- Added a **queryable DuckDB data asset** (`data/cfbstats.duckdb`) that bundles
+  every cleaned, contract-checked table into one SQL-queryable file, built by the
+  new `build_duckdb()` (`R/duckdb.R`) as the `duckdb_file` pipeline target
+  (`format = "file"`, downstream of the clean stage) so its schema matches the
+  data dictionaries. It is published alongside the parquet on the `data-latest`
+  release: the `data-refresh` workflow pulls existing assets, ingests, runs
+  `tar_make(duckdb_file)`, then uploads the parquet **and** the `.duckdb` file.
+  Added `inst/data-model.md` — a Mermaid ERD plus the five join namespaces (and
+  the two look-alike traps, `recruiting.playerId` and `picks.nflAthleteId`),
+  leakage / out-of-time guidance, and example SQL — cross-linking each table to
+  its `inst/dict/*.yml`. `DBI` and `duckdb` added to `Suggests`.
+  See [decision 0016](https://github.com/ngiangre/cfbstats/blob/main/decisions/0016-duckdb-query-asset.md).
+
 - Added **NFL outcomes for drafted players** from nflverse (`nflreadr`) as three
   first-class tables (`ingest_nfl_*()` → `clean_nfl_*()`, published on the
   `data-latest` release): `nfl_draft_picks` (the bridge + Pro-Football-Reference

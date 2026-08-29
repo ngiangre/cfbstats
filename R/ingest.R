@@ -10,6 +10,46 @@ cfbd_base_url <- function() {
   "https://api.collegefootballdata.com"
 }
 
+#' Is the pipeline running in refresh (re-ingest) mode?
+#'
+#' Refresh mode is opt-in via the `CFBSTATS_REFRESH` environment variable so the
+#' pipeline can run offline against committed/downloaded parquet by default
+#' (decision 0017). The site build and ordinary analysis leave it unset.
+#'
+#' @return `TRUE` when `CFBSTATS_REFRESH` is set to a truthy value.
+#' @keywords internal
+refresh_enabled <- function() {
+  isTRUE(as.logical(Sys.getenv("CFBSTATS_REFRESH", "false")))
+}
+
+#' Materialize (in refresh mode) or track a parquet data asset
+#'
+#' The pipeline's ingest targets call this (decision 0017). In **refresh mode**
+#' ([refresh_enabled()]) it calls `build()` and writes the result to `path`; in
+#' **track mode** (the default) it assumes `path` already exists — committed, or
+#' downloaded from the `data-latest` release — and simply returns it, so the DAG
+#' runs with no API key. Returned so a `format = "file"` target can track it.
+#'
+#' @param path Destination parquet path.
+#' @param build A zero-argument function returning the table to write (e.g. an
+#'   `ingest_*()` function). Only evaluated in refresh mode.
+#'
+#' @return `path` (returned visibly so a `format = "file"` target can track it).
+#' @keywords internal
+parquet_asset <- function(path, build) {
+  if (refresh_enabled()) {
+    rlang::check_installed("arrow", reason = "to write a parquet data asset.")
+    dir.create(dirname(path), showWarnings = FALSE, recursive = TRUE)
+    arrow::write_parquet(build(), path)
+  } else if (!file.exists(path)) {
+    cli::cli_abort(c(
+      "Data asset {.path {path}} not found and refresh is off.",
+      "i" = "Set {.envvar CFBSTATS_REFRESH=true} to ingest it, or download the {.val data-latest} release."
+    ))
+  }
+  path
+}
+
 #' Perform an authenticated CFBD API request
 #'
 #' Thin wrapper over `httr2` that attaches the bearer token from the

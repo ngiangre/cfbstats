@@ -10,7 +10,8 @@
       "*.qmd": "allow",
       "*/DESCRIPTION": "allow",
       "*/.gitignore": "allow",
-      "*/.Rbuildignore": "allow"
+      "*/.Rbuildignore": "allow",
+      "*.yaml": "allow"
     },
     "executeCode": {
       "*": "allow"

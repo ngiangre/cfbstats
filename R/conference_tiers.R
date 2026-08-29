@@ -13,6 +13,61 @@ conference_tier_levels <- function() {
   c("FCS and below" = 1L, "Group of 5" = 2L, "Power" = 3L)
 }
 
+#' Build the season x conference -> tier lookup
+#'
+#' Derives the season-aware competitive tier for every `(season, conference)`
+#' pair observed in `player_stats` (decision 0003), so the lookup refreshes as a
+#' pure function of the ingested stats (decision 0017). A conference not in the
+#' Power or Group-of-5 sets defaults to tier 1 (FCS and below) rather than being
+#' dropped; `contract_conference_tiers()` then enforces full coverage.
+#'
+#' Season-awareness handles realignment over 2010-2026 (the Pac-12 collapse to
+#' tier 2 from 2024, Western Athletic dropping FBS football after 2012). Note:
+#' "FBS Independents" is tier 2 here, but Notre Dame is Power-level — apply that
+#' team-level override in the transfer-direction feature step, not here.
+#'
+#' @param player_stats Long player-season stats with `season` and `conference`.
+#'
+#' @return A tibble with columns `season`, `conference`, `tier`, `tier_label`.
+#' @export
+build_conference_tiers <- function(player_stats) {
+  rlang::check_installed("dplyr")
+  tier_levels <- conference_tier_levels()
+  power <- c("ACC", "SEC", "Big Ten", "Big 12", "Pac-12", "Pac-10", "Big East")
+  g5 <- c(
+    "American Athletic",
+    "Mountain West",
+    "Mid-American",
+    "Sun Belt",
+    "Conference USA",
+    "FBS Independents",
+    "Western Athletic"
+  )
+  player_stats |>
+    dplyr::distinct(season, conference) |>
+    dplyr::mutate(
+      tier = dplyr::case_when(
+        conference %in% power ~ 3L,
+        conference %in% g5 ~ 2L,
+        .default = 1L
+      ),
+      # Pac-12 collapses to two teams in 2024-2025 -> no longer Power.
+      tier = dplyr::if_else(
+        conference == "Pac-12" & season >= 2024,
+        2L,
+        tier
+      ),
+      # Western Athletic dropped FBS football after 2012 -> FCS thereafter.
+      tier = dplyr::if_else(
+        conference == "Western Athletic" & season >= 2013,
+        1L,
+        tier
+      ),
+      tier_label = names(tier_levels)[match(tier, unname(tier_levels))]
+    ) |>
+    dplyr::arrange(season, dplyr::desc(tier), conference)
+}
+
 #' Data contract for the season x conference -> tier lookup
 #'
 #' Validates the conference-tier lookup and, crucially, its *coverage*: every
