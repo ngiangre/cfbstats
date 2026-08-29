@@ -3,6 +3,7 @@
 export(add_change_features)
 export(add_roster_weight)
 export(audit_step)
+export(build_duckdb)
 export(build_player_season)
 export(clean_coaches)
 export(clean_nfl_draft_picks)

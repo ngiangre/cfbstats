@@ -29,3 +29,7 @@ arrow::write_parquet(
 cli::cli_alert_success(
   "Refreshed CFBD data into data/ for {min(years)}-{max(years)}."
 )
+
+# The queryable DuckDB bundle (data/cfbstats.duckdb) is built by the pipeline
+# from the cleaned tables, not here: run `targets::tar_make(duckdb_file)` after
+# a refresh (the data-refresh workflow does this before publishing). Decision 0016.

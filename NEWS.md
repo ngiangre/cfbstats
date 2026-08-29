@@ -6,6 +6,19 @@ layer, and the documentation site, all under version control.
 
 ## Pipeline & data
 
+- Added a **queryable DuckDB data asset** (`data/cfbstats.duckdb`) that bundles
+  every cleaned, contract-checked table into one SQL-queryable file, built by the
+  new `build_duckdb()` (`R/duckdb.R`) as the `duckdb_file` pipeline target
+  (`format = "file"`, downstream of the clean stage) so its schema matches the
+  data dictionaries. It is published alongside the parquet on the `data-latest`
+  release: the `data-refresh` workflow pulls existing assets, ingests, runs
+  `tar_make(duckdb_file)`, then uploads the parquet **and** the `.duckdb` file.
+  Added `inst/data-model.md` — a Mermaid ERD plus the five join namespaces (and
+  the two look-alike traps, `recruiting.playerId` and `picks.nflAthleteId`),
+  leakage / out-of-time guidance, and example SQL — cross-linking each table to
+  its `inst/dict/*.yml`. `DBI` and `duckdb` added to `Suggests`.
+  See [decision 0016](https://github.com/ngiangre/cfbstats/blob/main/decisions/0016-duckdb-query-asset.md).
+
 - Added **NFL outcomes for drafted players** from nflverse (`nflreadr`) as three
   first-class tables (`ingest_nfl_*()` → `clean_nfl_*()`, published on the
   `data-latest` release): `nfl_draft_picks` (the bridge + Pro-Football-Reference

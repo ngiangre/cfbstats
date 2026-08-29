@@ -123,6 +123,14 @@ Ingestion lives in `data-raw/` and writes parquet to `data/`. Years 2010–2025.
   fixtures), `site.yaml` (pull data release asset → `tar_make()` → render →
   Pages), `data-refresh.yaml` (scheduled ingest → publish parquet via
   `piggyback`). Site/refresh need `CFBD_API_KEY` and Pages enabled.
+- **DuckDB query asset** (decision 0016): `build_duckdb()` (`R/duckdb.R`) bundles
+  the **cleaned** tables into `data/cfbstats.duckdb`, built by the `duckdb_file`
+  target (`format = "file"`, downstream of clean) so its schema matches the
+  dicts. Published on `data-latest` alongside the parquet: `data-refresh`
+  downloads existing assets → `refresh.R` → `tar_make(duckdb_file)` → upload
+  `*.{parquet,duckdb}`. Model map + join namespaces documented in
+  `inst/data-model.md` (links each table to `inst/dict/*.yml`). New tables must
+  be added to the `duckdb_file` table list and to `inst/data-model.md`.
 - **Roster is a first-class target** (`roster_file` → `raw_roster` → `roster`,
   decision 0009): `data/roster.parquet` is ingested by `refresh.R`, published on
   the `data-latest` release, and read like the other tables. `add_roster_weight`

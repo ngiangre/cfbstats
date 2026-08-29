@@ -45,6 +45,7 @@ jobs:
             local::.
             any::altdoc
             any::piggyback
+            any::duckdb
 
       # data/ is gitignored, so it is absent on a fresh checkout; pb_download
       # will not create the dest dir and errors ("Failed to open file ...").

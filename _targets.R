@@ -156,6 +156,30 @@ list(
   # ---- model + report (placeholders) ----------------------------------------
   tar_target(model_fit, fit_draft_model(model_table)),
 
+  # ---- package: bundle cleaned tables into a queryable DuckDB asset ----------
+  # One SQL-queryable file carrying the cleaned, contract-checked tables (the
+  # schemas in inst/dict/*.yml), published alongside the parquet on the
+  # data-latest release (decision 0016). format = "file" so targets tracks it.
+  tar_target(
+    duckdb_file,
+    build_duckdb(
+      list(
+        picks = picks,
+        player_stats = player_stats,
+        coaches = coaches,
+        teams = teams,
+        conference_tiers = tiers,
+        roster = roster,
+        recruiting = recruiting,
+        nfl_draft_picks = nfl_draft_picks,
+        nfl_rosters = nfl_rosters,
+        nfl_player_stats = nfl_player_stats
+      ),
+      "data/cfbstats.duckdb"
+    ),
+    format = "file"
+  ),
+
   # ---- audit log (decision 0005): one uniform row per tracked step ----------
   tar_target(
     audit_log,

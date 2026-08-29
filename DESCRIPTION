@@ -26,6 +26,8 @@ Imports:
 Suggests: 
     altdoc,
     arrow,
+    DBI,
+    duckdb,
     gert,
     ggiraph,
     ggpath,
