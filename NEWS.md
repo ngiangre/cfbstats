@@ -177,6 +177,17 @@ layer, and the documentation site, all under version control.
   `drafted`). Covered by `tests/testthat/test-link.R` and
   `tests/testthat/test-contracts.R`.
   See [decision 0015](https://github.com/ngiangre/cfbstats/blob/main/decisions/0015-blog-post-conventions-and-build-robustness.md).
+  `player_trajectory()` and the first blog post now read the published parquet
+  on its **cleaned** schema (decision 0018) rather than the raw schema they were
+  written against: the helper filters roster `playerId` and NFL roster
+  `nfl_team` (test fixtures updated to match), and the post's recruiting chunk
+  and team-metadata join use the cleaned recruiting columns (`playerId`,
+  `recruit_name`, `hs_class`, `national_rank`, `committed_to`) and `teams$team`.
+  The post's committed Quarto freeze was regenerated against the fixed code.
+- Added `data-raw/build-site.R`, a thin local-build wrapper mirroring the
+  `site` workflow: it sets `CFBSTATS_ROOT` to the project root (so vignettes
+  resolve `data/*.parquet` and `tar_read()` from altdoc's temp build dir) and
+  runs `altdoc::render_docs(freeze = TRUE)` to reuse the committed freeze cache.
 - Added an **NFL-outcomes exemplar** to the Explore page: `viz_nfl_roster_seasons_by_round()`
   plots career length (distinct seasons on an NFL roster) by draft round with the
   #1 overall picks highlighted against the field, noting the right-censoring of
