@@ -46,6 +46,7 @@ test_that("clean_nfl_rosters drops idless rows and keys one row per player-seaso
   raw <- tibble::tibble(
     gsis_id = c("00-1", "00-1", NA_character_),
     season = c(2019L, 2020L, 2019L),
+    full_name = c("Josh Allen", "Josh Allen", "No Id"),
     team = c("BUF", "BUF", "NYJ"),
     position = c("QB", "QB", "WR"),
     status = c("ACT", "ACT", "ACT"),

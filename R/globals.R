@@ -24,5 +24,11 @@ utils::globalVariables(c(
   "pick",
   "nfl_matched",
   "who",
-  "stage"
+  "stage",
+  # pointblank::vars() targets for the stat-phase taxonomy contract
+  "category",
+  "statType",
+  "phase",
+  "label",
+  "kind"
 ))

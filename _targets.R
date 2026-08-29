@@ -168,6 +168,9 @@ list(
     cue = tar_cue(mode = "always")
   ),
   tar_target(tiers, arrow::read_parquet(tiers_file)),
+  # Stat-phase taxonomy: hand-authored package data (inst/extdata), read via
+  # stat_taxonomy(); makes the long player_stats interpretable (phase + labels).
+  tar_target(stat_taxonomy, stat_taxonomy()),
 
   # ---- contracts (decision 0005): pass/fail feeds the audit log -------------
   tar_target(
@@ -246,6 +249,16 @@ list(
       contract_nfl_link(picks_nfl, picks, stop_on_fail = FALSE)
     )
   ),
+  tar_target(
+    ok_stat_taxonomy,
+    pointblank::all_passed(
+      contract_stat_taxonomy(
+        player_stats,
+        stat_taxonomy,
+        stop_on_fail = FALSE
+      )$coverage
+    )
+  ),
 
   # ---- link -----------------------------------------------------------------
   tar_target(player_season, build_player_season(player_stats)),
@@ -282,7 +295,8 @@ list(
         recruiting = recruiting,
         nfl_draft_picks = nfl_draft_picks,
         nfl_rosters = nfl_rosters,
-        nfl_player_stats = nfl_player_stats
+        nfl_player_stats = nfl_player_stats,
+        stat_taxonomy = stat_taxonomy
       ),
       "data/cfbstats.duckdb"
     ),
@@ -416,6 +430,13 @@ list(
         picks,
         keys = "playerId",
         contract_passed = ok_nfl_link
+      ),
+      audit_step(
+        stat_taxonomy,
+        "stat_taxonomy",
+        "clean",
+        keys = c("category", "statType"),
+        contract_passed = ok_stat_taxonomy
       )
     )
   )

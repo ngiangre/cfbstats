@@ -20,6 +20,18 @@ dictionaries next to this file, one YAML per table:
 | `nfl_draft_picks` | one NFL draft pick | [`dict/nfl_draft_picks.yml`](dict/nfl_draft_picks.yml) |
 | `nfl_rosters` | one player-season on an NFL roster | [`dict/nfl_rosters.yml`](dict/nfl_rosters.yml) |
 | `nfl_player_stats` | one NFL player-season (regular season) | [`dict/nfl_player_stats.yml`](dict/nfl_player_stats.yml) |
+| `stat_taxonomy` | one (category, statType) pair | [`dict/stat_taxonomy.yml`](dict/stat_taxonomy.yml) |
+
+`stat_taxonomy` is **package data**, not a published parquet: it is hand-authored
+in `inst/extdata/stat_taxonomy.csv`, read via `stat_taxonomy()`, and materialized
+into the DuckDB bundle (so SQL users get phase/labels). It maps each
+`(category, statType)` in the long `player_stats` to a game **phase**
+(offense / defense / special_teams) and a plain-language `label`, making the
+stats interpretable — a bare `TD` becomes "Passing touchdowns" vs "Defensive
+touchdowns". Keyed at `(category, statType)` grain because a category alone can
+be phase-ambiguous (`fumbles/FUM` is offense, `fumbles/REC` is defense).
+`contract_stat_taxonomy()` enforces coverage of every pair present in
+`player_stats` (decision 0019).
 
 The dictionaries document the **cleaned** schemas (e.g. `clean_picks` adds
 `playerId`/`drafted`). Both published assets carry exactly these cleaned tables:

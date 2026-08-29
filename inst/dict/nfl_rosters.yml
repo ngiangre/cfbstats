@@ -18,6 +18,13 @@ columns:
     type: int32
     description: NFL season.
     provenance: raw
+  - name: player_name
+    type: string
+    description: >
+      Player full name (nflverse full_name). Kept to name-guard an undrafted
+      college->NFL match, which has no draft slot to key on (see
+      resolve_nfl_outcome()); display/QA only, never a join key.
+    provenance: raw (full_name)
   - name: nfl_team
     type: string
     description: Team abbreviation.

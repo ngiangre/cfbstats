@@ -260,6 +260,10 @@ clean_nfl_rosters <- function(nfl_rosters) {
     dplyr::transmute(
       gsis_id = as.character(.data$gsis_id),
       season = as.integer(.data$season),
+      # Player name kept (unlike the other id-only bridges) so an undrafted
+      # college->NFL match can be name-guarded (there is no draft slot to key on
+      # for UDFAs); see resolve_nfl_outcome().
+      player_name = as.character(.data$full_name),
       nfl_team = as.character(.data$team),
       position = as.character(.data$position),
       status = as.character(.data$status),

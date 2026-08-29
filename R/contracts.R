@@ -300,7 +300,13 @@ contract_nfl_draft_picks <- function(nfl_draft_picks, stop_on_fail = TRUE) {
 contract_nfl_rosters <- function(nfl_rosters, stop_on_fail = TRUE) {
   rlang::check_installed("pointblank")
   agent <- pointblank::create_agent(nfl_rosters, label = "nfl_rosters") |>
-    pointblank::col_exists(c("gsis_id", "season", "nfl_team", "years_exp")) |>
+    pointblank::col_exists(c(
+      "gsis_id",
+      "season",
+      "player_name",
+      "nfl_team",
+      "years_exp"
+    )) |>
     pointblank::col_vals_not_null(pointblank::vars(gsis_id, season)) |>
     pointblank::rows_distinct(pointblank::vars(gsis_id, season)) |>
     pointblank::col_vals_between("season", 2010, 2026) |>
@@ -396,4 +402,88 @@ contract_player_trajectory <- function(spine, stop_on_fail = TRUE) {
     pointblank::col_vals_not_null(pointblank::vars(drafted)) |>
     pointblank::interrogate()
   enforce_contract(agent, "player_trajectory", stop_on_fail)
+}
+
+#' Data contract for the stat-phase taxonomy
+#'
+#' Validates the taxonomy lookup and, crucially, its *coverage*: every
+#' `(category, statType)` pair present in `player_stats` must resolve to a
+#' taxonomy row, so a new stat appearing in a refresh fails fast rather than
+#' going silently unlabeled (the analogue of the conference-tier coverage
+#' guard). Intended to run in the pipeline.
+#'
+#' @param player_stats Long player-season stats with `category` and `statType`;
+#'   the coverage universe the taxonomy must fully cover.
+#' @param taxonomy The taxonomy lookup; defaults to [stat_taxonomy()].
+#' @param stop_on_fail If `TRUE` (default), raise an error when any check fails.
+#'
+#' @return Invisibly, a list of the two interrogated `pointblank` agents
+#'   (`lookup`, `coverage`).
+#' @export
+contract_stat_taxonomy <- function(
+  player_stats,
+  taxonomy = stat_taxonomy(),
+  stop_on_fail = TRUE
+) {
+  rlang::check_installed(
+    "pointblank",
+    reason = "to run the stat-taxonomy data contract."
+  )
+  taxonomy <- dplyr::collect(taxonomy)
+  player_stats <- dplyr::collect(player_stats)
+
+  # Intrinsic checks on the taxonomy table itself.
+  agent_lookup <-
+    pointblank::create_agent(taxonomy, label = "stat_taxonomy: lookup") |>
+    pointblank::col_exists(
+      c("category", "statType", "phase", "label", "kind")
+    ) |>
+    pointblank::col_vals_not_null(
+      pointblank::vars(category, statType, phase, label, kind)
+    ) |>
+    pointblank::col_vals_in_set(
+      "phase",
+      c("offense", "defense", "special_teams")
+    ) |>
+    pointblank::col_vals_in_set("kind", c("scoring", "volume", "rate")) |>
+    pointblank::rows_distinct(pointblank::vars(category, statType)) |>
+    pointblank::interrogate()
+
+  # Referential coverage: no (category, statType) in player_stats is unmapped.
+  coverage <- player_stats |>
+    dplyr::distinct(.data$category, .data$statType) |>
+    dplyr::left_join(
+      dplyr::transmute(
+        taxonomy,
+        .data$category,
+        .data$statType,
+        has_phase = TRUE
+      ),
+      by = c("category", "statType")
+    ) |>
+    dplyr::mutate(has_phase = !is.na(.data$has_phase))
+
+  agent_coverage <-
+    pointblank::create_agent(coverage, label = "stat_taxonomy: coverage") |>
+    pointblank::col_vals_equal("has_phase", TRUE) |>
+    pointblank::interrogate()
+
+  if (stop_on_fail) {
+    if (!pointblank::all_passed(agent_lookup)) {
+      cli::cli_abort(
+        "The {.file stat_taxonomy} lookup failed its data contract."
+      )
+    }
+    if (!pointblank::all_passed(agent_coverage)) {
+      missing <- dplyr::filter(coverage, !.data$has_phase)
+      examples <- utils::head(paste(missing$category, missing$statType), 3)
+      cli::cli_abort(c(
+        "The {.file stat_taxonomy} does not cover all of {.var player_stats}.",
+        "x" = "{nrow(missing)} (category, statType) pair{?s} unmapped.",
+        "i" = "e.g. {.val {examples}}"
+      ))
+    }
+  }
+
+  invisible(list(lookup = agent_lookup, coverage = agent_coverage))
 }

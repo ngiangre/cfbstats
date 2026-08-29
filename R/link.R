@@ -320,6 +320,224 @@ player_trajectory <- function(subjects, roster, nfl_rosters, nfl_draft_picks) {
     dplyr::arrange(.data$who, .data$season)
 }
 
+#' Resolve a single player's NFL outcome (drafted or undrafted-signed)
+#'
+#' The general college->NFL bridge used by [player_dossier()]. Answers, for one
+#' player, whether they reached the NFL and how: **drafted** (via the reliable
+#' draft-slot bridge already in [link_nfl_draft()]) or **undrafted-signed** (via
+#' a name-guarded match against `nfl_rosters`, which is the only way to catch a
+#' UDFA — there is no draft slot to key on). This is deliberately an
+#' **outcome/label** resolver kept off the model input path (leakage), and it
+#' **never fabricates a link**: an ambiguous name match (multiple candidate
+#' players that college/entry-window can't disambiguate) resolves to
+#' `no-NFL-record` rather than a guessed id.
+#'
+#' Longevity (distinct NFL roster seasons, first/last season, career games) is
+#' computed from the matched `gsis_id`; `right_censored` flags players whose last
+#' roster season is the most recent one available (possibly still active), so
+#' treat their longevity as a ">=" outcome (decision 0014).
+#'
+#' @param subject A one-row tibble/list with `playerId` (CFBD athlete id,
+#'   string), `player` (name), and optionally `college` (CFBD school name) and
+#'   `last_college_season` (int) used to bound the draft window and disambiguate
+#'   name collisions.
+#' @param picks_nfl CFBD picks bridged to nflverse ([link_nfl_draft()]).
+#' @param nfl_rosters Cleaned NFL rosters ([clean_nfl_rosters()]); must carry
+#'   `player_name`.
+#' @param nfl_player_stats Cleaned NFL player-season stats
+#'   ([clean_nfl_player_stats()]); used for career games.
+#'
+#' @return A one-row tibble: `nfl_status`
+#'   (`drafted`/`undrafted-signed`/`no-NFL-record`), `nfl_match_method`
+#'   (`slot`/`name`/`name+college`/`name+window`/`none`), `gsis_id`,
+#'   `draft_year`/`draft_round`/`draft_overall`, `nfl_seasons`,
+#'   `nfl_first_season`, `nfl_last_season`, `nfl_games`, `right_censored`, and a
+#'   human `note`.
+#' @export
+resolve_nfl_outcome <- function(
+  subject,
+  picks_nfl,
+  nfl_rosters,
+  nfl_player_stats
+) {
+  stopifnot(all(c("playerId", "player") %in% names(subject)))
+  pid <- as.character(subject$playerId[[1]])
+  nm <- subject$player[[1]]
+  coll <- if ("college" %in% names(subject)) {
+    subject$college[[1]]
+  } else {
+    NA_character_
+  }
+  last_season <- if ("last_college_season" %in% names(subject)) {
+    suppressWarnings(as.integer(subject$last_college_season[[1]]))
+  } else {
+    NA_integer_
+  }
+
+  picks_nfl <- dplyr::collect(picks_nfl)
+  rosters <- nfl_rosters |>
+    dplyr::select(
+      "gsis_id",
+      "player_name",
+      "season",
+      "college",
+      "rookie_year"
+    ) |>
+    dplyr::collect()
+  max_nfl_season <- suppressWarnings(max(rosters$season, na.rm = TRUE))
+
+  longevity <- function(gsis) {
+    if (is.na(gsis)) {
+      return(list(
+        seasons = NA_integer_,
+        first = NA_integer_,
+        last = NA_integer_,
+        games = NA_integer_,
+        censored = NA
+      ))
+    }
+    seas <- rosters$season[rosters$gsis_id == gsis]
+    seas <- seas[!is.na(seas)]
+    games <- nfl_player_stats |>
+      dplyr::filter(.data$gsis_id == gsis) |>
+      dplyr::summarise(g = sum(.data$games, na.rm = TRUE)) |>
+      dplyr::collect() |>
+      dplyr::pull(.data$g)
+    list(
+      seasons = length(unique(seas)),
+      first = if (length(seas)) min(seas) else NA_integer_,
+      last = if (length(seas)) max(seas) else NA_integer_,
+      games = if (length(games)) as.integer(games) else NA_integer_,
+      censored = length(seas) > 0 && max(seas) >= max_nfl_season
+    )
+  }
+
+  outcome <- function(status, method, gsis, dy, dr, do, note) {
+    lg <- longevity(gsis)
+    tibble::tibble(
+      nfl_status = status,
+      nfl_match_method = method,
+      gsis_id = gsis,
+      draft_year = as.integer(dy),
+      draft_round = as.integer(dr),
+      draft_overall = as.integer(do),
+      nfl_seasons = lg$seasons,
+      nfl_first_season = lg$first,
+      nfl_last_season = lg$last,
+      nfl_games = lg$games,
+      right_censored = lg$censored,
+      note = note
+    )
+  }
+
+  # ---- drafted path: reliable draft-slot bridge (decision 0014) ----
+  draft_rows <- dplyr::filter(picks_nfl, .data$playerId == pid)
+  if (!is.na(last_season)) {
+    # A career ending in season S drafts in S+1; bound to guard against the
+    # cross-era collegeAthleteId reuse the picks table carries (decision 0011).
+    draft_rows <- dplyr::filter(
+      draft_rows,
+      is.na(.data$year) |
+        (.data$year >= last_season & .data$year <= last_season + 2L)
+    )
+  }
+  draft_rows <- draft_rows |>
+    dplyr::arrange(dplyr::desc(.data$year)) |>
+    utils::head(1)
+  if (nrow(draft_rows) == 1) {
+    gsis <- draft_rows$gsis_id[[1]]
+    return(outcome(
+      "drafted",
+      if (!is.na(gsis)) "slot" else "slot-unmatched",
+      gsis,
+      draft_rows$year[[1]],
+      draft_rows$round[[1]],
+      draft_rows$overall[[1]],
+      if (!is.na(gsis)) {
+        "Drafted; bridged to nflverse by draft slot."
+      } else {
+        "Drafted; no nflverse match at the draft slot (longevity unavailable)."
+      }
+    ))
+  }
+
+  # ---- undrafted path: name-guarded match against NFL rosters ----
+  cands <- rosters |>
+    dplyr::distinct(
+      .data$gsis_id,
+      .data$player_name,
+      .data$college,
+      .data$rookie_year
+    ) |>
+    dplyr::filter(normalize_name(.data$player_name) == normalize_name(nm))
+
+  if (nrow(cands) == 0) {
+    return(outcome(
+      "no-NFL-record",
+      "none",
+      NA_character_,
+      NA,
+      NA,
+      NA,
+      "No drafted pick and no name match on an NFL roster."
+    ))
+  }
+
+  method <- "name"
+  if (dplyr::n_distinct(cands$gsis_id) > 1) {
+    # Disambiguate a name collision by college, then by rookie-year window;
+    # refuse to guess if neither resolves to a single player.
+    narrowed <- cands
+    if (!is.na(coll)) {
+      by_college <- dplyr::filter(
+        narrowed,
+        normalize_name(.data$college) == normalize_name(coll)
+      )
+      if (dplyr::n_distinct(by_college$gsis_id) == 1) {
+        narrowed <- by_college
+        method <- "name+college"
+      }
+    }
+    if (dplyr::n_distinct(narrowed$gsis_id) > 1 && !is.na(last_season)) {
+      by_window <- dplyr::filter(
+        narrowed,
+        !is.na(.data$rookie_year) & .data$rookie_year == last_season + 1L
+      )
+      if (dplyr::n_distinct(by_window$gsis_id) == 1) {
+        narrowed <- by_window
+        method <- "name+window"
+      }
+    }
+    if (dplyr::n_distinct(narrowed$gsis_id) != 1) {
+      return(outcome(
+        "no-NFL-record",
+        "none",
+        NA_character_,
+        NA,
+        NA,
+        NA,
+        paste0(
+          "Ambiguous NFL name match (",
+          dplyr::n_distinct(cands$gsis_id),
+          " candidates); not linked to avoid a false attribution."
+        )
+      ))
+    }
+    cands <- narrowed
+  }
+
+  gsis <- unique(cands$gsis_id)[[1]]
+  outcome(
+    "undrafted-signed",
+    method,
+    gsis,
+    NA,
+    NA,
+    NA,
+    paste0("Undrafted; signed to an NFL roster (matched by ", method, ").")
+  )
+}
+
 #' Bridge CFBD picks to nflverse ids and NFL outcomes
 #'
 #' Attaches nflverse player ids and headline NFL-career outcomes to CFBD `picks`
