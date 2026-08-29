@@ -1,0 +1,55 @@
+category,statType,phase,label,kind,description
+defensive,PD,defense,Passes defended,volume,Passes broken up or defended by a defender.
+defensive,QB HUR,defense,QB hurries,volume,Quarterback hurries credited to a defender.
+defensive,SACKS,defense,Sacks,volume,Quarterback sacks.
+defensive,SOLO,defense,Solo tackles,volume,Unassisted tackles.
+defensive,TD,defense,Defensive touchdowns,scoring,Touchdowns scored by the defense.
+defensive,TFL,defense,Tackles for loss,volume,Tackles behind the line of scrimmage.
+defensive,TOT,defense,Total tackles,volume,Total tackles (solo plus assisted).
+fumbles,FUM,offense,Fumbles,volume,Times the ball carrier fumbled.
+fumbles,LOST,offense,Fumbles lost,volume,Fumbles recovered by the opponent.
+fumbles,REC,defense,Fumbles recovered,volume,Opponent fumbles recovered by the player.
+interceptions,AVG,defense,Interception return average (yds),rate,Average return yards per interception.
+interceptions,INT,defense,Interceptions,volume,Passes intercepted by the defender.
+interceptions,TD,defense,Interception-return touchdowns,scoring,Touchdowns scored on interception returns.
+interceptions,YDS,defense,Interception return yards,volume,Yards gained on interception returns.
+kickReturns,AVG,special_teams,Kick-return average (yds),rate,Average yards per kickoff return.
+kickReturns,LONG,special_teams,Longest kick return (yds),volume,Longest kickoff return.
+kickReturns,NO,special_teams,Kick returns,volume,Number of kickoff returns.
+kickReturns,TD,special_teams,Kick-return touchdowns,scoring,Touchdowns scored on kickoff returns.
+kickReturns,YDS,special_teams,Kick-return yards,volume,Total kickoff return yards.
+kicking,FGA,special_teams,Field goals attempted,volume,Field goal attempts.
+kicking,FGM,special_teams,Field goals made,volume,Field goals made.
+kicking,LONG,special_teams,Longest field goal (yds),volume,Longest field goal made.
+kicking,PCT,special_teams,Field goal percentage,rate,Field goals made per attempt.
+kicking,PTS,special_teams,Kicking points,scoring,Points scored by kicking.
+kicking,XPA,special_teams,Extra points attempted,volume,Extra point attempts.
+kicking,XPM,special_teams,Extra points made,volume,Extra points made.
+passing,ATT,offense,Pass attempts,volume,Passes attempted.
+passing,COMPLETIONS,offense,Completions,volume,Passes completed.
+passing,INT,offense,Interceptions thrown,volume,Passes intercepted by the defense.
+passing,PCT,offense,Completion percentage,rate,Completions per attempt.
+passing,TD,offense,Passing touchdowns,scoring,Touchdown passes thrown.
+passing,YDS,offense,Passing yards,volume,Total passing yards.
+passing,YPA,offense,Yards per attempt,rate,Passing yards per attempt.
+puntReturns,AVG,special_teams,Punt-return average (yds),rate,Average yards per punt return.
+puntReturns,LONG,special_teams,Longest punt return (yds),volume,Longest punt return.
+puntReturns,NO,special_teams,Punt returns,volume,Number of punt returns.
+puntReturns,TD,special_teams,Punt-return touchdowns,scoring,Touchdowns scored on punt returns.
+puntReturns,YDS,special_teams,Punt-return yards,volume,Total punt return yards.
+punting,In 20,special_teams,Punts inside the 20,volume,Punts downed inside the opponent 20.
+punting,LONG,special_teams,Longest punt (yds),volume,Longest punt.
+punting,NO,special_teams,Punts,volume,Number of punts.
+punting,TB,special_teams,Touchbacks,volume,Punts resulting in a touchback.
+punting,YDS,special_teams,Punt yards,volume,Total punting yards.
+punting,YPP,special_teams,Yards per punt,rate,Punting yards per punt.
+receiving,LONG,offense,Longest reception (yds),volume,Longest reception.
+receiving,REC,offense,Receptions,volume,Passes caught.
+receiving,TD,offense,Receiving touchdowns,scoring,Touchdown receptions.
+receiving,YDS,offense,Receiving yards,volume,Total receiving yards.
+receiving,YPR,offense,Yards per reception,rate,Receiving yards per reception.
+rushing,CAR,offense,Carries,volume,Rushing attempts.
+rushing,LONG,offense,Longest rush (yds),volume,Longest rush.
+rushing,TD,offense,Rushing touchdowns,scoring,Rushing touchdowns.
+rushing,YDS,offense,Rushing yards,volume,Total rushing yards.
+rushing,YPC,offense,Yards per carry,rate,Rushing yards per carry.

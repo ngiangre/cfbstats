@@ -67,6 +67,34 @@ counts are **right-censored** lower bounds.
 viz_nfl_roster_seasons_by_round(tar_read(picks_nfl), tar_read(nfl_rosters))
 ```
 
+## Player dossier — an interpreted extract
+
+A raw extract of a player's rows is easy to misread: the long `player_stats`
+stores a bare `TD` under a `category`, so offensive, defensive, and
+special-teams scores look alike; drafted players link cleanly to the NFL but
+undrafted-yet-signed ones don't; and a blank coach cell could mean "no data" or
+"non-FBS". `player_dossier()` resolves these into one **interpreted** record
+(decision 0019): stats grouped and labeled by phase, per-season coaching with an
+explicit "not available" where the FBS-only feed is blank, name-guarded
+recruiting, a drafted/undrafted-signed NFL outcome, and a provenance block.
+
+```{r}
+#| label: dossier
+#| comment: ""
+# Cam Ward (CFBD athlete id 4688380): #1 overall in 2025, with a 2021 FCS
+# season at Incarnate Word that surfaces the head-coach coverage gap.
+player_dossier(
+  "4688380",
+  tar_read(player_stats),
+  tar_read(roster),
+  tar_read(coaches),
+  tar_read(picks_nfl),
+  tar_read(recruiting),
+  tar_read(nfl_rosters),
+  tar_read(nfl_player_stats)
+)
+```
+
 ## Branding — team logos
 
 The `teams` dimension carries each program's logo and colors, joined by school

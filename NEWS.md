@@ -6,6 +6,37 @@ layer, and the documentation site, all under version control.
 
 ## Pipeline & data
 
+- Added a **stat-phase taxonomy** and an **interpretable player dossier** so a
+  reviewer gets *interpretation*, not a raw extract (decision 0019). The long
+  `player_stats` already tags each stat with a `category`, but a flattened
+  extract loses it; the new `stat_taxonomy()` (hand-authored package data in
+  `inst/extdata/stat_taxonomy.csv`, materialized into the DuckDB bundle) maps
+  every `(category, statType)` to a game **phase** (offense / defense /
+  special_teams), a plain-language `label`, and a `kind`, so a bare `TD` becomes
+  "Passing touchdowns" vs "Defensive touchdowns". It is keyed at
+  `(category, statType)` grain because `fumbles` is phase-ambiguous
+  (`FUM`/`LOST` offense, `REC` defense); `label_stats()` applies it and
+  `contract_stat_taxonomy()` fails fast if a refresh introduces an unlabeled
+  stat. `resolve_nfl_outcome()` is the general college→NFL bridge — **drafted**
+  via the reliable draft-slot bridge (decision 0014) or **undrafted-signed** via
+  a name-guarded match against `nfl_rosters` (disambiguated by college then
+  rookie-year window), refusing to guess on an unresolved name collision
+  (`no-NFL-record`); it is enabled by adding `player_name` to
+  `clean_nfl_rosters` (dict + `contract_nfl_rosters` updated) and stays
+  outcome-side, off the model path. `player_dossier(id, …)` assembles a
+  `cfb_dossier` (tidy tables + a `print()` method): identity, stats grouped and
+  labeled by phase, per-player-season coaching with an explicit "head coach not
+  available (non-FBS / not in CFBD feed)" flag, name-guarded recruiting (unrated
+  stays unrated), the drafted/undrafted-signed outcome with right-censored
+  longevity, and a provenance/caveats block. The Explore vignette renders an
+  interpreted dossier (Cam Ward) so the site shows the extract, not raw rows.
+  Validated on Kyle Allen (undrafted,
+  9 NFL seasons) and Cam Ward (#1 overall 2025; 2021 Incarnate Word flagged as
+  an FCS coach gap). Covered by `tests/testthat/test-stat-taxonomy.R`,
+  `test-nfl-outcome.R`, and `test-dossier.R`. **`nfl_rosters` must be refreshed
+  and republished on `data-latest` before merge** (schema change).
+  See [decision 0019](https://github.com/ngiangre/cfbstats/blob/main/decisions/0019-stat-taxonomy-and-player-dossier.md).
+
 - **Published parquet are now the cleaned tables** (decision 0018), so the
   `data/*.parquet` assets, the DuckDB bundle, and the data dictionaries all carry
   one identical schema per table. Ingest (`raw_*`) now happens in memory in
