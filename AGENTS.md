@@ -170,7 +170,14 @@ wrapper (`CFBSTATS_REFRESH=true` + `tar_make()`). Years 2010–2026.
 Solo repo. `main` always deployable; short-lived `feat/`/`data/`/`model/`
 branches; **squash-merge** for a linear history; throwaway `spike/` branches
 never merged. Conventional Commits (`type(scope): summary`). Let CI (testthat +
-pointblank) pass before merging data/model changes. **Before merging a feature
+pointblank) pass before merging data/model changes.
+
+**GitHub API ops use the `gh` R package, not the `gh` CLI.** The `gh` R package
+authenticates with a token already saved in the environment (the CLI is not
+logged in). Use it for PRs, merges, and dispatching workflows, e.g.
+`gh::gh("POST /repos/{owner}/{repo}/pulls", ...)`,
+`gh::gh("PUT /repos/{owner}/{repo}/pulls/{n}/merge", merge_method = "squash")`,
+`gh::gh("POST /repos/{owner}/{repo}/actions/workflows/{file}/dispatches", ref = ...)`. **Before merging a feature
 branch into `main`, update `NEWS.md`** with the user-facing changes (linking any
 relevant decision record via full GitHub URL) — an empty changelog entry is a
 smell, and R CMD check flags a NEWS with no entries (decision 0007).
