@@ -13,7 +13,9 @@ library(cfbstats)
 library(dplyr)
 library(targets)
 root <- Sys.getenv("CFBSTATS_ROOT")
-if (nzchar(root)) knitr::opts_knit$set(root.dir = root)
+if (nzchar(root)) {
+  knitr::opts_knit$set(root.dir = root)
+}
 ```
 
 Interactive exemplars for the three chart families the project uses: **time
@@ -42,7 +44,10 @@ Each point is a drafted player; hover for the name. Color encodes draft round.
 #| label: fig-2d
 viz_scatter_2d(
   dplyr::slice_sample(picks, n = min(1500, nrow(picks))),
-  x = weight, y = height, tooltip = name, color = round
+  x = weight,
+  y = height,
+  tooltip = name,
+  color = round
 )
 ```
 
@@ -50,7 +55,13 @@ viz_scatter_2d(
 
 ```{r}
 #| label: fig-3d
-viz_scatter_3d(picks, x = "height", y = "weight", z = "overall", color = "round")
+viz_scatter_3d(
+  picks,
+  x = "height",
+  y = "weight",
+  z = "overall",
+  color = "round"
+)
 ```
 
 ## NFL outcomes — how long drafted players last
@@ -67,32 +78,84 @@ counts are **right-censored** lower bounds.
 viz_nfl_roster_seasons_by_round(tar_read(picks_nfl), tar_read(nfl_rosters))
 ```
 
-## Player dossier — an interpreted extract
+## Player dossier
 
-A raw extract of a player's rows is easy to misread: the long `player_stats`
-stores a bare `TD` under a `category`, so offensive, defensive, and
-special-teams scores look alike; drafted players link cleanly to the NFL but
-undrafted-yet-signed ones don't; and a blank coach cell could mean "no data" or
-"non-FBS". `player_dossier()` resolves these into one **interpreted** record
-(decision 0019): stats grouped and labeled by phase, per-season coaching with an
-explicit "not available" where the FBS-only feed is blank, name-guarded
-recruiting, a drafted/undrafted-signed NFL outcome, and a provenance block.
+`player_dossier()` resolves a player's scattered rows into one **interpreted**
+record (decision 0019) rather than a raw extract that is easy to misread. Each
+dossier shows: identity and physicals; college statistics grouped and labeled by
+game **phase** (offense / defense / special teams); per-season coaching context;
+name-guarded high-school recruiting; the NFL outcome (drafted or
+undrafted-signed) with longevity; and a provenance / caveats block.
+
+Below are the **#1 overall picks of the past five NFL drafts**, each rendered as
+an interpreted dossier.
+
+Notes:
+
+- A bare `TD` in the long `player_stats` is ambiguous, so stats are relabelled
+  by phase (e.g. "Passing touchdowns" vs "Defensive touchdowns").
+- A blank coach cell is shown as "head coach not available" — the CFBD coaches
+  feed is FBS head coaches only, so a non-FBS season (e.g. Cam Ward's 2021 FCS
+  year at Incarnate Word) is flagged, not silently dropped.
+- Recruiting is name-guarded (decision 0013); a genuinely unrated player stays
+  unrated, never imputed.
+- NFL longevity is **right-censored** for these recent picks — all are still
+  active, so seasons/games are lower bounds.
 
 ```{r}
-#| label: dossier
+#| label: dossier-setup
+#| include: false
+# Read the shared inputs once; `dossier()` keys a player by CFBD athlete id.
+ps <- tar_read(player_stats)
+ros <- tar_read(roster)
+co <- tar_read(coaches)
+picks_nfl <- tar_read(picks_nfl)
+rec <- tar_read(recruiting)
+nrs <- tar_read(nfl_rosters)
+nps <- tar_read(nfl_player_stats)
+dossier <- function(id) {
+  player_dossier(id, ps, ros, co, picks_nfl, rec, nrs, nps)
+}
+```
+
+### Fernando Mendoza — 2026 #1, Indiana
+
+```{r}
+#| label: dossier-mendoza
 #| comment: ""
-# Cam Ward (CFBD athlete id 4688380): #1 overall in 2025, with a 2021 FCS
-# season at Incarnate Word that surfaces the head-coach coverage gap.
-player_dossier(
-  "4688380",
-  tar_read(player_stats),
-  tar_read(roster),
-  tar_read(coaches),
-  tar_read(picks_nfl),
-  tar_read(recruiting),
-  tar_read(nfl_rosters),
-  tar_read(nfl_player_stats)
-)
+dossier("4837248")
+```
+
+### Cam Ward — 2025 #1, Miami
+
+```{r}
+#| label: dossier-ward
+#| comment: ""
+dossier("4688380")
+```
+
+### Caleb Williams — 2024 #1, USC
+
+```{r}
+#| label: dossier-williams
+#| comment: ""
+dossier("4431611")
+```
+
+### Bryce Young — 2023 #1, Alabama
+
+```{r}
+#| label: dossier-young
+#| comment: ""
+dossier("4685720")
+```
+
+### Travon Walker — 2022 #1, Georgia
+
+```{r}
+#| label: dossier-walker
+#| comment: ""
+dossier("4426349")
 ```
 
 ## Branding — team logos

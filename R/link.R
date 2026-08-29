@@ -242,18 +242,19 @@ link_recruiting <- function(player_season, recruiting) {
 #' [link_nfl_draft()] / [link_recruiting()]).
 #'
 #' The source tables may be lazy `arrow` Datasets (the published
-#' `data/*.parquet`, read on their **raw** schema — `roster` uses `id`, NFL
-#' tables use `gsis_id`) or in-memory tibbles; the pipeline runs the same dplyr
-#' verbs over either and `collect()`s at the end. This encapsulates the data
-#' pull a blog post would otherwise inline (decision 0015).
+#' `data/*.parquet`, read on their **cleaned** schema — decision 0018 — so
+#' `roster` uses `playerId`, `nfl_rosters` uses `nfl_team`, and NFL tables key on
+#' `gsis_id`) or in-memory tibbles; the pipeline runs the same dplyr verbs over
+#' either and `collect()`s at the end. This encapsulates the data pull a blog
+#' post would otherwise inline (decision 0015).
 #'
 #' @param subjects A registry tibble with `who` (display name), `cfb_athlete_id`
 #'   (CFBD athlete id, string), and `gsis_id` (nflverse id, string).
-#' @param roster College roster source (raw `data/roster.parquet` schema: `id`,
-#'   `season`, `team`).
-#' @param nfl_rosters NFL roster source (raw `data/nfl_rosters.parquet` schema:
-#'   `gsis_id`, `season`, `team`).
-#' @param nfl_draft_picks NFL draft-pick source (raw
+#' @param roster College roster source (cleaned `data/roster.parquet` schema:
+#'   `playerId`, `season`, `team`).
+#' @param nfl_rosters NFL roster source (cleaned `data/nfl_rosters.parquet`
+#'   schema: `gsis_id`, `season`, `nfl_team`).
+#' @param nfl_draft_picks NFL draft-pick source (cleaned
 #'   `data/nfl_draft_picks.parquet` schema: `gsis_id`, `season`, `round`,
 #'   `pick`). Lists drafted players only.
 #'
@@ -270,15 +271,16 @@ player_trajectory <- function(subjects, roster, nfl_rosters, nfl_draft_picks) {
   gsis_ids <- subjects$gsis_id
 
   college <- roster |>
-    dplyr::filter(.data$id %in% cfb_ids) |>
-    dplyr::select(cfb_athlete_id = "id", "season", "team") |>
+    dplyr::filter(.data$playerId %in% cfb_ids) |>
+    dplyr::select(cfb_athlete_id = "playerId", "season", "team") |>
     dplyr::collect() |>
     dplyr::mutate(stage = "College")
 
   nfl <- nfl_rosters |>
     dplyr::filter(.data$gsis_id %in% gsis_ids) |>
-    dplyr::distinct(.data$gsis_id, .data$season, .data$team) |>
+    dplyr::distinct(.data$gsis_id, .data$season, .data$nfl_team) |>
     dplyr::collect() |>
+    dplyr::rename(team = "nfl_team") |>
     dplyr::left_join(
       dplyr::select(subjects, "gsis_id", "cfb_athlete_id"),
       by = "gsis_id"

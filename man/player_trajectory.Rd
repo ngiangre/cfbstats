@@ -10,13 +10,13 @@ player_trajectory(subjects, roster, nfl_rosters, nfl_draft_picks)
 \item{subjects}{A registry tibble with \code{who} (display name), \code{cfb_athlete_id}
 (CFBD athlete id, string), and \code{gsis_id} (nflverse id, string).}
 
-\item{roster}{College roster source (raw \code{data/roster.parquet} schema: \code{id},
-\code{season}, \code{team}).}
+\item{roster}{College roster source (cleaned \code{data/roster.parquet} schema:
+\code{playerId}, \code{season}, \code{team}).}
 
-\item{nfl_rosters}{NFL roster source (raw \code{data/nfl_rosters.parquet} schema:
-\code{gsis_id}, \code{season}, \code{team}).}
+\item{nfl_rosters}{NFL roster source (cleaned \code{data/nfl_rosters.parquet}
+schema: \code{gsis_id}, \code{season}, \code{nfl_team}).}
 
-\item{nfl_draft_picks}{NFL draft-pick source (raw
+\item{nfl_draft_picks}{NFL draft-pick source (cleaned
 \code{data/nfl_draft_picks.parquet} schema: \code{gsis_id}, \code{season}, \code{round},
 \code{pick}). Lists drafted players only.}
 }
@@ -38,8 +38,9 @@ table, this join needs no name guard (unlike the CFBD-side bridges in
 }
 \details{
 The source tables may be lazy \code{arrow} Datasets (the published
-\verb{data/*.parquet}, read on their \strong{raw} schema — \code{roster} uses \code{id}, NFL
-tables use \code{gsis_id}) or in-memory tibbles; the pipeline runs the same dplyr
-verbs over either and \code{collect()}s at the end. This encapsulates the data
-pull a blog post would otherwise inline (decision 0015).
+\verb{data/*.parquet}, read on their \strong{cleaned} schema — decision 0018 — so
+\code{roster} uses \code{playerId}, \code{nfl_rosters} uses \code{nfl_team}, and NFL tables key on
+\code{gsis_id}) or in-memory tibbles; the pipeline runs the same dplyr verbs over
+either and \code{collect()}s at the end. This encapsulates the data pull a blog
+post would otherwise inline (decision 0015).
 }

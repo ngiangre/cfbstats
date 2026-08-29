@@ -52,14 +52,14 @@ test_that("player_trajectory assembles both stages and marks undrafted", {
     gsis_id = c("00-d", "00-u")
   )
   roster <- tibble::tibble(
-    id = c("100", "200", "999"),
+    playerId = c("100", "200", "999"),
     season = c(2015L, 2016L, 2015L),
     team = c("Texas", "Texas A&M", "Other")
   )
   nfl_rosters <- tibble::tibble(
     gsis_id = c("00-d", "00-d", "00-u"),
     season = c(2018L, 2019L, 2021L),
-    team = c("KC", "KC", "BUF")
+    nfl_team = c("KC", "KC", "BUF")
   )
   nfl_draft_picks <- tibble::tibble(
     gsis_id = "00-d",

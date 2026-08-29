@@ -77,18 +77,22 @@ In that spirit, I want to start investigating players playing tonight in the hom
 
 ```{r}
 #| label: recruiting-origins
+# Cleaned recruiting schema (decision 0018): raw athleteId/name/year/committedTo/
+# ranking are now playerId/recruit_name/hs_class/committed_to/national_rank, and
+# hometown (city/stateProvince) is not carried. The recruiting id is an
+# untrusted namespace (decision 0013); this direct filter is QA-verified for
+# these two named players, not a general-purpose join.
 open_dataset("data/recruiting.parquet") |>
-  filter(athleteId %in% subjects$cfb_athlete_id) |>
+  filter(playerId %in% subjects$cfb_athlete_id) |>
   select(
-    athleteId,
-    name,
-    year,
-    committedTo,
+    playerId,
+    recruit_name,
+    hs_class,
+    committed_to,
+    recruit_position,
     stars,
     rating,
-    ranking,
-    city,
-    stateProvince
+    national_rank
   ) |>
   collect() |>
   arrange(desc(stars)) |>
@@ -106,7 +110,8 @@ Let's see where they went to where they are now:
 #| include: false
 # Assemble the college->NFL spine (one row per player-season) with a
 # data-backed draft status, keyed on athlete/gsis ids (decision 0015). Reads the
-# published parquet on its raw schema; draft status comes from nfl_draft_picks.
+# published parquet on its cleaned schema (decision 0018); draft status comes
+# from nfl_draft_picks.
 spine <- player_trajectory(
   subjects,
   roster = open_dataset("data/roster.parquet"),
@@ -137,11 +142,11 @@ rel_lum <- function(hex) {
   out
 }
 college_meta <- open_dataset("data/teams.parquet") |>
-  select(school, color, logo_light, logo_dark) |>
+  select(team, color, logo_light, logo_dark) |>
   collect() |>
   transmute(
-    team = school,
-    name = school,
+    team = team,
+    name = team,
     color,
     logo = if_else(
       !is.na(rel_lum(color)) & rel_lum(color) < 0.5,
