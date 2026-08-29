@@ -18,100 +18,156 @@ tar_option_set(
 targets::tar_source()
 
 list(
-  # ---- ingest -> raw parquet assets (decision 0017) -------------------------
-  # In refresh mode (CFBSTATS_REFRESH=true) parquet_asset() ingests from
-  # CFBD/nflverse and WRITES the raw parquet; otherwise it tracks the existing
-  # committed/downloaded file (no API key). `cue = always` so a local re-refresh
-  # always re-ingests; in track mode the command just returns the path (cheap)
-  # and downstream rebuilds only on an actual file-hash change. The site build
-  # runs in track mode.
+  # ---- ingest (decisions 0017-0018) -----------------------------------------
+  # Refresh mode (CFBSTATS_REFRESH=true) pulls each source from CFBD/nflverse in
+  # memory; track mode (default, no key) leaves them NULL because the cleaned
+  # parquet below is read directly. `cue = always` so a local re-refresh always
+  # re-ingests.
   tar_target(
-    picks_file,
-    parquet_asset("data/picks.parquet", ingest_picks),
-    format = "file",
+    raw_picks,
+    if (refresh_enabled()) ingest_picks(),
     cue = tar_cue(mode = "always")
   ),
   tar_target(
-    player_stats_file,
-    parquet_asset("data/player_stats.parquet", ingest_player_stats),
-    format = "file",
+    raw_player_stats,
+    if (refresh_enabled()) ingest_player_stats(),
     cue = tar_cue(mode = "always")
   ),
   tar_target(
-    coaches_file,
-    parquet_asset("data/coaches.parquet", ingest_coaches),
-    format = "file",
+    raw_coaches,
+    if (refresh_enabled()) ingest_coaches(),
     cue = tar_cue(mode = "always")
   ),
   tar_target(
-    teams_file,
-    parquet_asset("data/teams.parquet", ingest_teams),
-    format = "file",
+    raw_teams,
+    if (refresh_enabled()) ingest_teams(),
     cue = tar_cue(mode = "always")
   ),
   tar_target(
-    roster_file,
-    parquet_asset("data/roster.parquet", ingest_roster),
-    format = "file",
+    raw_roster,
+    if (refresh_enabled()) ingest_roster(),
     cue = tar_cue(mode = "always")
   ),
   tar_target(
-    recruiting_file,
-    parquet_asset("data/recruiting.parquet", ingest_recruiting),
-    format = "file",
+    raw_recruiting,
+    if (refresh_enabled()) ingest_recruiting(),
     cue = tar_cue(mode = "always")
   ),
   # NFL outcomes via nflverse (decision 0014); no CFBD key required to ingest.
   tar_target(
-    nfl_draft_picks_file,
-    parquet_asset("data/nfl_draft_picks.parquet", ingest_nfl_draft_picks),
+    raw_nfl_draft_picks,
+    if (refresh_enabled()) ingest_nfl_draft_picks(),
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(
+    raw_nfl_rosters,
+    if (refresh_enabled()) ingest_nfl_rosters(),
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(
+    raw_nfl_player_stats,
+    if (refresh_enabled()) ingest_nfl_player_stats(),
+    cue = tar_cue(mode = "always")
+  ),
+
+  # ---- clean -> published parquet assets (decision 0018) --------------------
+  # The published parquet ARE the cleaned tables, so parquet and the DuckDB
+  # bundle carry identical schemas. In refresh mode parquet_asset() cleans the
+  # freshly ingested raw and WRITES the parquet; in track mode it tracks the
+  # existing committed/downloaded file (no key, no re-clean). Each `<table>`
+  # target then reads the cleaned parquet, so it is the single source of truth.
+  tar_target(
+    picks_file,
+    parquet_asset("data/picks.parquet", function() clean_picks(raw_picks)),
     format = "file",
     cue = tar_cue(mode = "always")
   ),
+  tar_target(picks, arrow::read_parquet(picks_file)),
+  tar_target(
+    player_stats_file,
+    parquet_asset(
+      "data/player_stats.parquet",
+      function() clean_player_stats(raw_player_stats)
+    ),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(player_stats, arrow::read_parquet(player_stats_file)),
+  tar_target(
+    coaches_file,
+    parquet_asset("data/coaches.parquet", function() {
+      clean_coaches(raw_coaches)
+    }),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(coaches, arrow::read_parquet(coaches_file)),
+  tar_target(
+    teams_file,
+    parquet_asset("data/teams.parquet", function() clean_teams(raw_teams)),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(teams, arrow::read_parquet(teams_file)),
+  tar_target(
+    roster_file,
+    parquet_asset("data/roster.parquet", function() clean_roster(raw_roster)),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(roster, arrow::read_parquet(roster_file)),
+  tar_target(
+    recruiting_file,
+    parquet_asset(
+      "data/recruiting.parquet",
+      function() clean_recruiting(raw_recruiting)
+    ),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(recruiting, arrow::read_parquet(recruiting_file)),
+  tar_target(
+    nfl_draft_picks_file,
+    parquet_asset(
+      "data/nfl_draft_picks.parquet",
+      function() clean_nfl_draft_picks(raw_nfl_draft_picks)
+    ),
+    format = "file",
+    cue = tar_cue(mode = "always")
+  ),
+  tar_target(nfl_draft_picks, arrow::read_parquet(nfl_draft_picks_file)),
   tar_target(
     nfl_rosters_file,
-    parquet_asset("data/nfl_rosters.parquet", ingest_nfl_rosters),
+    parquet_asset(
+      "data/nfl_rosters.parquet",
+      function() clean_nfl_rosters(raw_nfl_rosters)
+    ),
     format = "file",
     cue = tar_cue(mode = "always")
   ),
+  tar_target(nfl_rosters, arrow::read_parquet(nfl_rosters_file)),
   tar_target(
     nfl_player_stats_file,
-    parquet_asset("data/nfl_player_stats.parquet", ingest_nfl_player_stats),
+    parquet_asset(
+      "data/nfl_player_stats.parquet",
+      function() clean_nfl_player_stats(raw_nfl_player_stats)
+    ),
     format = "file",
     cue = tar_cue(mode = "always")
   ),
-  tar_target(raw_picks, arrow::read_parquet(picks_file)),
-  tar_target(raw_player_stats, arrow::read_parquet(player_stats_file)),
-  tar_target(raw_coaches, arrow::read_parquet(coaches_file)),
-  tar_target(raw_teams, arrow::read_parquet(teams_file)),
-  tar_target(raw_roster, arrow::read_parquet(roster_file)),
-  tar_target(raw_recruiting, arrow::read_parquet(recruiting_file)),
-  tar_target(raw_nfl_draft_picks, arrow::read_parquet(nfl_draft_picks_file)),
-  tar_target(raw_nfl_rosters, arrow::read_parquet(nfl_rosters_file)),
-  tar_target(raw_nfl_player_stats, arrow::read_parquet(nfl_player_stats_file)),
-  # conference_tiers is derived in-pipeline from the ingested player_stats
-  # (decision 0017): its own parquet asset in refresh mode, else tracked.
+  tar_target(nfl_player_stats, arrow::read_parquet(nfl_player_stats_file)),
+  # conference_tiers derived from the cleaned player_stats (decision 0017),
+  # published as its own cleaned parquet asset.
   tar_target(
     tiers_file,
     parquet_asset(
       "data/conference_tiers.parquet",
-      function() build_conference_tiers(raw_player_stats)
+      function() build_conference_tiers(player_stats)
     ),
     format = "file",
     cue = tar_cue(mode = "always")
   ),
   tar_target(tiers, arrow::read_parquet(tiers_file)),
-
-  # ---- clean ----------------------------------------------------------------
-  tar_target(picks, clean_picks(raw_picks)),
-  tar_target(player_stats, clean_player_stats(raw_player_stats)),
-  tar_target(coaches, clean_coaches(raw_coaches)),
-  tar_target(teams, clean_teams(raw_teams)),
-  tar_target(roster, clean_roster(raw_roster)),
-  tar_target(recruiting, clean_recruiting(raw_recruiting)),
-  tar_target(nfl_draft_picks, clean_nfl_draft_picks(raw_nfl_draft_picks)),
-  tar_target(nfl_rosters, clean_nfl_rosters(raw_nfl_rosters)),
-  tar_target(nfl_player_stats, clean_nfl_player_stats(raw_nfl_player_stats)),
 
   # ---- contracts (decision 0005): pass/fail feeds the audit log -------------
   tar_target(

@@ -6,6 +6,14 @@ layer, and the documentation site, all under version control.
 
 ## Pipeline & data
 
+- **Published parquet are now the cleaned tables** (decision 0018), so the
+  `data/*.parquet` assets, the DuckDB bundle, and the data dictionaries all carry
+  one identical schema per table. Ingest (`raw_*`) now happens in memory in
+  refresh mode only; each `<table>_file` target writes the *cleaned* parquet and
+  `<table>` reads it back, making the cleaned parquet the single source of truth
+  downstream. Track-mode builds read the cleaned parquet directly (no re-clean,
+  no key). See [decision 0018](https://github.com/ngiangre/cfbstats/blob/main/decisions/0018-cleaned-parquet-assets.md).
+
 - **The `targets` pipeline now owns ingest → process → assets** (decision 0017).
   A single `tar_make()` in **refresh mode** (`CFBSTATS_REFRESH=true`) ingests
   every source — including `conference_tiers`, now derived in-pipeline from the

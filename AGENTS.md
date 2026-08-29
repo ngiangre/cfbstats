@@ -10,7 +10,9 @@ their career — pursuing both explanatory (inference) and predictive answers
 
 ## Data
 
-CFBD API (`https://api.collegefootballdata.com`); key in `CFBD_API_KEY`.
+CFBD API (`https://api.collegefootballdata.com`); key in `CFBD_API_KEY`
+(configured in the local environment and as a GitHub Actions repo secret, so
+refresh runs both locally and in CI).
 The **pipeline owns ingest → process → assets** (decision 0017): a single
 `tar_make()` in **refresh mode** (`CFBSTATS_REFRESH=true`) ingests every source
 (incl. `conference_tiers`, derived in-pipeline from `player_stats` by
@@ -35,8 +37,9 @@ wrapper (`CFBSTATS_REFRESH=true` + `tar_make()`). Years 2010–2026.
 ### Gotchas (do not ignore)
 
 - **`data/` is gitignored — NO parquet is tracked in git.** Do **not** `git add`
-  or commit `data/*.parquet` (a `git status` won't even show it). The raw tables
-  ship as assets on the **`data-latest` GitHub release**: the `data-refresh.yaml`
+  or commit `data/*.parquet` (a `git status` won't even show it). The **cleaned**
+  tables (parquet == DuckDB == dict schema, decision 0018) ship as assets on the
+  **`data-latest` GitHub release**: the `data-refresh.yaml`
   job runs `tar_make()` in refresh mode (writes `data/*.{parquet,duckdb}`) then
   `piggyback::pb_upload(..., tag="data-latest")`; `site.yaml` does
   `piggyback::pb_download(tag="data-latest")` on a fresh checkout and runs
@@ -100,12 +103,14 @@ wrapper (`CFBSTATS_REFRESH=true` + `tar_make()`). Years 2010–2026.
   (decision 0004). Stages: **ingest → clean → link → features → model →
   report**. Functions live in `R/` by stage: `ingest.R`, `clean.R`, `link.R`,
   `features.R`, `model.R` (placeholder), `contracts.R`, `audit.R`, `viz.R`.
-  Ingest is env-gated (decision 0017): each `*_file` target runs
-  `parquet_asset(path, ingest_fn)` with `cue = "always"` — refresh mode ingests
-  from the API and writes the parquet, track mode (default) reads the
-  existing/downloaded file (no key). `conference_tiers` is derived from the
-  ingested `player_stats` via `build_conference_tiers()` (`R/conference_tiers.R`),
-  not a standalone script.
+  Ingest is env-gated (decisions 0017-0018): `raw_*` targets ingest **in memory**
+  in refresh mode only (`if (refresh_enabled()) ingest_*()`, NULL in track mode).
+  Each `<table>_file` (`format="file"`, `cue="always"`) is the published
+  **cleaned** parquet via `parquet_asset(path, \() clean_*(raw_*))` — refresh
+  cleans+writes, track mode tracks the existing/downloaded file (no key, no
+  re-clean); `<table>` then reads that cleaned parquet. So **parquet == DuckDB ==
+  dict schema** (decision 0018). `conference_tiers` derives from the cleaned
+  `player_stats` via `build_conference_tiers()` (`R/conference_tiers.R`).
 - **Lineage/audit** (decision 0005): `audit_step()` emits a uniform per-step
   record (row/col counts, rows dropped, key coverage, NA cells, schema hash,
   contract pass/fail, git SHA) → the `audit_log` target. Data dictionaries in

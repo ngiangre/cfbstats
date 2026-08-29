@@ -1,32 +1,22 @@
 # The data dictionaries in inst/dict/*.yml must document exactly the columns of
 # their cleaned target schema, with matching types, so the dictionaries never
-# silently drift from the pipeline (decision 0005). Each cleaned target is
-# deterministic given its raw parquet, so we reconstruct the schema via the
-# clean_*() function rather than depending on a built _targets store. Skips when
-# the raw data is unavailable (e.g. R CMD check without the data-latest release).
+# silently drift from the pipeline (decision 0005). The published parquet now IS
+# the cleaned target schema (decision 0018), so the dict is compared directly
+# against the parquet columns/types. Skips when the data is unavailable (e.g.
+# R CMD check without the data-latest release).
 
-# dataset (dict file / `dataset` field) -> raw file + the function that produces
-# the cleaned target schema (identity where the target is the raw read).
-dict_schema_specs <- list(
-  picks = list(file = "picks.parquet", clean = clean_picks),
-  player_stats = list(
-    file = "player_stats.parquet",
-    clean = clean_player_stats
-  ),
-  coaches = list(file = "coaches.parquet", clean = clean_coaches),
-  teams = list(file = "teams.parquet", clean = clean_teams),
-  roster = list(file = "roster.parquet", clean = clean_roster),
-  recruiting = list(file = "recruiting.parquet", clean = clean_recruiting),
-  conference_tiers = list(file = "conference_tiers.parquet", clean = identity),
-  nfl_draft_picks = list(
-    file = "nfl_draft_picks.parquet",
-    clean = clean_nfl_draft_picks
-  ),
-  nfl_rosters = list(file = "nfl_rosters.parquet", clean = clean_nfl_rosters),
-  nfl_player_stats = list(
-    file = "nfl_player_stats.parquet",
-    clean = clean_nfl_player_stats
-  )
+# dataset (dict file / `dataset` field) -> its published (cleaned) parquet.
+dict_parquet <- c(
+  picks = "picks.parquet",
+  player_stats = "player_stats.parquet",
+  coaches = "coaches.parquet",
+  teams = "teams.parquet",
+  roster = "roster.parquet",
+  recruiting = "recruiting.parquet",
+  conference_tiers = "conference_tiers.parquet",
+  nfl_draft_picks = "nfl_draft_picks.parquet",
+  nfl_rosters = "nfl_rosters.parquet",
+  nfl_player_stats = "nfl_player_stats.parquet"
 )
 
 # dict `type` token -> the R storage type (typeof) it must map to.
@@ -47,12 +37,11 @@ test_that("each inst/dict/*.yml documents exactly its cleaned target schema", {
   dict_dir <- system.file("dict", package = "cfbstats")
   skip_if(identical(dict_dir, ""), "installed dict/ not found")
 
-  for (ds in names(dict_schema_specs)) {
-    spec <- dict_schema_specs[[ds]]
-    parquet <- file.path(data_dir, spec$file)
-    skip_if_not(file.exists(parquet), paste0("missing ", spec$file))
+  for (ds in names(dict_parquet)) {
+    parquet <- file.path(data_dir, dict_parquet[[ds]])
+    skip_if_not(file.exists(parquet), paste0("missing ", dict_parquet[[ds]]))
 
-    cleaned <- spec$clean(arrow::read_parquet(parquet))
+    cleaned <- arrow::read_parquet(parquet)
     actual_type <- vapply(cleaned, typeof, character(1))
 
     dict <- yaml::read_yaml(file.path(dict_dir, paste0(ds, ".yml")))

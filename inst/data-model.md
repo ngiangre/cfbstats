@@ -22,17 +22,19 @@ dictionaries next to this file, one YAML per table:
 | `nfl_player_stats` | one NFL player-season (regular season) | [`dict/nfl_player_stats.yml`](dict/nfl_player_stats.yml) |
 
 The dictionaries document the **cleaned** schemas (e.g. `clean_picks` adds
-`playerId`/`drafted`). The DuckDB asset described below carries exactly these
-cleaned tables.
+`playerId`/`drafted`). Both published assets carry exactly these cleaned tables:
+the `data/*.parquet` files and the DuckDB bundle share one identical schema per
+table (decision 0018).
 
 ## The DuckDB asset
 
 `data/cfbstats.duckdb` bundles every cleaned table into one SQL-queryable file.
 It is built by the **`duckdb_file`** target in `_targets.R` (`build_duckdb()`,
-decision 0016) from the cleaned, contract-checked tables — so its schema matches
-the dictionaries above — and published alongside the parquet on the
-`data-latest` GitHub release. Table names match the rows above
-(`conference_tiers`, not `tiers`).
+decision 0016) from the cleaned, contract-checked tables — the same tables
+written to the `data/*.parquet` assets (decision 0018), so parquet and DuckDB
+carry one identical schema per table, matching the dictionaries above — and
+published alongside the parquet on the `data-latest` GitHub release. Table names
+match the rows above (`conference_tiers`, not `tiers`).
 
 ```r
 library(DBI)
