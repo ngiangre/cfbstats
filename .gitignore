@@ -63,5 +63,5 @@ rsconnect/
 /_site/
 _freeze/
 altdoc/freeze.rds
-_quarto/*
+_quarto/
 !_quarto/_freeze/
